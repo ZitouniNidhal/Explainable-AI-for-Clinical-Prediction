@@ -1,0 +1,135 @@
+# config/config.yaml
+project:
+  name: "XAI Clinical Prediction"
+  version: "1.0.0"
+  random_state: 42
+
+data:
+  # Option 1: Use synthetic generated data
+  use_synthetic: true
+  synthetic_samples: 2000
+  
+  # Option 2: Path to external data (MIMIC-III, etc.)
+  external_data_path: null
+  
+  target_column: "clinical_outcome"
+  test_size: 0.2
+  validation_size: 0.1
+  
+  # Missing values handling
+  missing_threshold: 0.3
+  imputation_strategy: "iterative"  # simple, iterative, knn
+
+preprocessing:
+  # Normalization
+  scaling: "robust"  # standard, minmax, robust
+  
+  # Class balancing
+  balance_classes: true
+  balance_method: "smote"  # smote, adasyn, undersample
+  
+  # Feature selection
+  feature_selection: "mutual_info"  # mutual_info, chi2, anova
+  max_features: 50
+
+models:
+  # Models to train
+  classifiers:
+    - name: "logistic_regression"
+      enabled: true
+      params:
+        C: [0.1, 1.0, 10.0]
+        penalty: ["l1", "l2"]
+        solver: ["liblinear", "saga"]
+        max_iter: [1000]
+        
+    - name: "random_forest"
+      enabled: true
+      params:
+        n_estimators: [100, 200]
+        max_depth: [5, 10, null]
+        min_samples_split: [2, 5]
+        class_weight: ["balanced"]
+        
+    - name: "xgboost"
+      enabled: true
+      params:
+        n_estimators: [100, 200]
+        max_depth: [3, 6, 9]
+        learning_rate: [0.01, 0.1]
+        subsample: [0.8, 1.0]
+        colsample_bytree: [0.8, 1.0]
+        
+    - name: "lightgbm"
+      enabled: true
+      params:
+        n_estimators: [100, 200]
+        num_leaves: [31, 50]
+        learning_rate: [0.01, 0.1]
+        class_weight: ["balanced"]
+
+  # Hyperparameter optimization
+  hyperparameter_tuning:
+    method: "bayesian"  # grid, random, bayesian
+    n_trials: 50
+    cv_folds: 5
+    scoring: "roc_auc"
+
+explainability:
+  # Global methods
+  global_methods:
+    - "feature_importance"
+    - "permutation_importance"
+    - "partial_dependence"
+    
+  # Local methods
+  local_methods:
+    - "shap"
+    - "lime"
+    
+  # SHAP configuration
+  shap:
+    explainer_type: "tree"  # tree, kernel, deep
+    nsamples: 100
+    max_display: 20
+    
+  # LIME configuration
+  lime:
+    num_features: 10
+    num_samples: 5000
+    kernel_width: 3
+
+robustness:
+  # Robustness tests
+  noise_tests:
+    - type: "gaussian"
+      levels: [0.01, 0.05, 0.1]
+    - type: "missing"
+      levels: [0.05, 0.1, 0.2]
+      
+  stability_metrics:
+    - "jaccard_index"
+    - "spearman_correlation"
+    - "top_k_consistency"
+
+evaluation:
+  metrics:
+    - "accuracy"
+    - "precision"
+    - "recall"
+    - "f1"
+    - "roc_auc"
+    - "average_precision"
+    - "calibration_error"
+    
+  # Clinical validation
+  clinical_thresholds:
+    high_risk: 0.7
+    medium_risk: 0.3
+
+paths:
+  data: "data"
+  models: "models/saved_models"
+  reports: "reports"
+  figures: "reports/figures"
+  logs: "logs"
