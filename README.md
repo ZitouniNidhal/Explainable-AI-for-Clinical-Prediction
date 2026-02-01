@@ -28,3 +28,19 @@ venv\Scripts\activate  # Windows
 
 # Install dependencies
 pip install -r requirements.txt
+
+# CONTRIBUTING.md
+# Contributing to XAI Clinical Prediction
+
+Thank you for your interest in contributing to this project! Here are the guidelines for contributing:
+
+## Development Setup
+
+1. Fork the repository
+2. Clone your fork
+3. Create a virtual environment:
+```bash
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+# or
+venv\Scripts\activate  # Windows
