@@ -17,8 +17,7 @@ class SHAPExplainer:
     SHAP (SHapley Additive exPlanations) wrapper adapted for clinical models
     """
     
-    def __init__(self, model: Any, X_background: pd.DataFrame, 
-                 explainer_type: str = "auto", feature_names: Optional[List[str]] = None):
+    def __init__(self, model: Any, X_background: pd.DataFrame,explainer_type: str = "auto", feature_names: Optional[List[str]] = None):
         """
         Initialize SHAP explainer
         
@@ -171,9 +170,7 @@ class SHAPExplainer:
             plt.savefig(save_path, dpi=300, bbox_inches='tight')
         plt.show()
     
-    def plot_dependence(self, X: pd.DataFrame, feature: str, 
-                       interaction_feature: Optional[str] = None,
-                       save_path: Optional[str] = None):
+    def plot_dependence(self, X: pd.DataFrame, feature: str, interaction_feature: Optional[str] = None,save_path: Optional[str] = None):
         """
         Create dependence plot to analyze feature effect
         """
