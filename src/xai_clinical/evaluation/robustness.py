@@ -12,19 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class RobustnessEvaluator:
-    """
-    Comprehensive robustness evaluator for XAI explanations
-    """
-    
     def __init__(self, explainer: Any, feature_names: List[str], random_state: int = 42):
-        """
-        Initialize robustness evaluator
-        
-        Args:
-            explainer: XAI explainer object (SHAP, LIME, etc.)
-            feature_names: List of feature names
-            random_state: Random seed for reproducibility
-        """
         self.explainer = explainer
         self.feature_names = feature_names
         self.random_state = random_state
@@ -51,20 +39,8 @@ class RobustnessEvaluator:
             
         return X_noisy
     
-    def add_adversarial_noise(self, X: pd.DataFrame, y: np.ndarray, 
-                             model: Any, epsilon: float = 0.01) -> pd.DataFrame:
-        """
-        Add adversarial noise to features
-        
-        Args:
-            X: Original data
-            y: True labels
-            model: Trained model
-            epsilon: Adversarial perturbation magnitude
-            
-        Returns:
-            Adversarially perturbed data
-        """
+    def add_adversarial_noise(self, X: pd.DataFrame, y: np.ndarray,model: Any, epsilon: float = 0.01) -> pd.DataFrame:
+
         from sklearn.preprocessing import StandardScaler
         
         X_scaled = StandardScaler().fit_transform(X)
