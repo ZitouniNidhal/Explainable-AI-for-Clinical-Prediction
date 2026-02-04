@@ -19,16 +19,7 @@ class RobustnessEvaluator:
         self.rng = np.random.RandomState(random_state)
         
     def add_gaussian_noise(self, X: pd.DataFrame, noise_level: float = 0.01) -> pd.DataFrame:
-        """
-        Add Gaussian noise to features
-        
-        Args:
-            X: Original data
-            noise_level: Standard deviation of noise (as fraction of feature std)
-            
-        Returns:
-            Noisy data
-        """
+     
         X_noisy = X.copy()
         
         # Calculate noise for each feature
@@ -92,18 +83,7 @@ class RobustnessEvaluator:
     
     def add_missing_values(self, X: pd.DataFrame, missing_rate: float = 0.05, 
                           missing_pattern: str = 'mcar') -> pd.DataFrame:
-        """
-        Introduce missing values with different patterns
-        
-        Args:
-            X: Original data
-            missing_rate: Proportion of values to make missing
-            missing_pattern: 'mcar' (missing completely at random), 
-                           'mar' (missing at random), 'mnar' (missing not at random)
-                           
-        Returns:
-            Data with missing values
-        """
+      
         X_missing = X.copy()
         
         if missing_pattern == 'mcar':
