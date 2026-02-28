@@ -133,12 +133,6 @@ class ClinicalValidator:
         report.append("CLINICAL VALIDATION REPORT")
         report.append("="*60)
 
-        report.append(f"\nModel Performance:")
-        report.append(f"- AUC-ROC: {metric_results['auc_roc']:.3f}")
-        report.append(f"- Sensitivity: {metric_results['sensitivity']:.3f}")
-        report.append(f"- Specificity: {metric_results['specificity']:.3f}")
-        report.append(f"- PPV: {metric_results['ppv']:.3f}")
-        report.append(f"- NPV: {metric_results['npv']:.3f}")
 
   
         if explanation_method:
