@@ -140,12 +140,7 @@ class ClinicalValidator:
         report.append(f"- PPV: {metric_results['ppv']:.3f}")
         report.append(f"- NPV: {metric_results['npv']:.3f}")
 
-        report.append(f"\nClinical Validation:")
-        report.append(f"- Age effect valid: {validation_results['age_sensibility']['age_effect_valid']}")
-        report.append(f"- ASA effect valid: {validation_results['asa_sensibility']['asa_effect_valid']}")
-        report.append(f"- Emergency effect valid: {validation_results['emergency_sensibility']['emergency_effect_valid']}")
-        report.append(f"- Overall clinical validity: {validation_results['overall_valid']}")
-
+  
         if explanation_method:
             report.append(f"\nGlobal Explanation ({explanation_method}):")
             if explanation_method == "shap":
