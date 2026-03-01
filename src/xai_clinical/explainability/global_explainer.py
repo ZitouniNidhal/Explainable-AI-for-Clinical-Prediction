@@ -133,8 +133,19 @@ class ClinicalValidator:
         report.append("CLINICAL VALIDATION REPORT")
         report.append("="*60)
 
+        report.append(f"\nModel Performance:")
+        report.append(f"- AUC-ROC: {metric_results['auc_roc']:.3f}")
+        report.append(f"- Sensitivity: {metric_results['sensitivity']:.3f}")
+        report.append(f"- Specificity: {metric_results['specificity']:.3f}")
+        report.append(f"- PPV: {metric_results['ppv']:.3f}")
+        report.append(f"- NPV: {metric_results['npv']:.3f}")
 
-  
+        report.append(f"\nClinical Validation:")
+        report.append(f"- Age effect valid: {validation_results['age_sensibility']['age_effect_valid']}")
+        report.append(f"- ASA effect valid: {validation_results['asa_sensibility']['asa_effect_valid']}")
+        report.append(f"- Emergency effect valid: {validation_results['emergency_sensibility']['emergency_effect_valid']}")
+        report.append(f"- Overall clinical validity: {validation_results['overall_valid']}")
+
         if explanation_method:
             report.append(f"\nGlobal Explanation ({explanation_method}):")
             if explanation_method == "shap":
