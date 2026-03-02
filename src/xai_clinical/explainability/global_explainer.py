@@ -122,9 +122,7 @@ class ClinicalValidator:
         from .metrics import ClinicalMetrics
 
         metrics = ClinicalMetrics()
-        metric_results = metrics.calculate_all_metrics(y_test,
-                                                       (y_pred_proba >= 0.5).astype(int),
-                                                       y_pred_proba)
+        metric_results = metrics.calculate_all_metrics(y_test,(y_pred_proba >= 0.5).astype(int),y_pred_proba)
 
         validation_results = self.validate_clinical_sense(model, X_test)
         explanation = self.generate_global_explanation(model, X_test, method=explanation_method) if explanation_method else {}
