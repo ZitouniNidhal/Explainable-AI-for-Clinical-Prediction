@@ -39,8 +39,7 @@ def plot_model_comparison(results: Dict[str, Dict], save_path: Optional[str] = N
     plt.show()
 
 
-def plot_confusion_matrix(y_true: np.ndarray, y_pred: np.ndarray, 
-                         class_names: List[str] = None, save_path: Optional[str] = None):
+def plot_confusion_matrix(y_true: np.ndarray, y_pred: np.ndarray,class_names: List[str] = None, save_path: Optional[str] = None):
     """Plot confusion matrix"""
     if class_names is None:
         class_names = ['No Complication', 'Complication']
@@ -81,8 +80,7 @@ def plot_roc_curves(y_true: np.ndarray, y_proba: np.ndarray, save_path: Optional
     plt.show()
 
 
-def plot_calibration_curve(y_true: np.ndarray, y_proba: np.ndarray, 
-                          n_bins: int = 10, save_path: Optional[str] = None):
+def plot_calibration_curve(y_true: np.ndarray, y_proba: np.ndarray, n_bins: int = 10, save_path: Optional[str] = None):
     """Plot calibration curve"""
     from sklearn.calibration import calibration_curve
     
@@ -103,8 +101,7 @@ def plot_calibration_curve(y_true: np.ndarray, y_proba: np.ndarray,
     plt.show()
 
 
-def plot_feature_importance(importance_df: pd.DataFrame, title: str = "Feature Importance",
-                          save_path: Optional[str] = None):
+def plot_feature_importance(importance_df: pd.DataFrame, title: str = "Feature Importance",save_path: Optional[str] = None):
     """Plot feature importance"""
     plt.figure(figsize=(10, 8))
     sns.barplot(data=importance_df.head(15), x='importance', y='feature')
