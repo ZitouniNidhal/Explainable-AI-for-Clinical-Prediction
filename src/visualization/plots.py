@@ -1,7 +1,4 @@
-# src/xai_clinical/visualization/plots.py (complété)
-"""
-Visualization utilities for XAI clinical predictions
-"""
+
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
