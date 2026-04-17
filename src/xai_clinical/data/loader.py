@@ -58,7 +58,49 @@ class DataLoader:
             return pd.read_feather(path, **kwargs)
         else:
             raise ValueError(f"Unsupported file format: {path.suffix}")
-    
+
+    @staticmethod
+    def load_pancan_expression(config: dict) -> pd.DataFrame:
+        import os
+        expression_path = os.path.join(config["pancan_dir"], config["pancan_files"]["expression"])
+        if not os.path.exists(expression_path):
+            raise FileNotFoundError(f"Fichier d'expression introuvable : {expression_path}")
+
+        # Charger les données (peut être volumineux)
+        df = pd.read_csv(expression_path, sep="\t", index_col=0)
+
+        # Filtrer pour le type de cancer souhaité (ex. : BRCA)
+        if "filter_cancer_type" in config:
+            cancer_samples = [col for col in df.columns if config["filter_cancer_type"] in col]
+            df = df[cancer_samples]
+
+        print(f"Données d'expression chargées : {df.shape}")
+        return df
+
+    @staticmethod
+    def load_pancan_mutations(config: dict) -> pd.DataFrame:
+        """Charge les données de mutations PANCAN."""
+        import os
+        mutations_path = os.path.join(config["pancan_dir"], config["pancan_files"]["mutations"])
+        if not os.path.exists(mutations_path):
+            raise FileNotFoundError(f"Fichier de mutations introuvable : {mutations_path}")
+
+        df = pd.read_csv(mutations_path, sep="\t")
+
+        # Filtrer pour le type de cancer souhaité
+        if "filter_cancer_type" in config:
+            df = df[df["Tumor_Sample_Barcode"].str.contains(config["filter_cancer_type"])]
+
+        print(f"Données de mutations chargées : {len(df)} mutations")
+        return df
+
+    @staticmethod
+    def load_pancan_data(config: dict) -> Dict[str, pd.DataFrame]:
+        """Charge toutes les données PANCAN."""
+        return {
+            "expression": DataLoader.load_pancan_expression(config),
+            "mutations": DataLoader.load_pancan_mutations(config)
+        }
     def load_synthetic_data(self) -> Tuple[pd.DataFrame, pd.Series]:
         """Load or generate synthetic data"""
         synthetic_path = self.config.get_path('data') / 'synthetic_data.csv'
