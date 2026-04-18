@@ -29,7 +29,7 @@
 
 ```bash
 # Clone repository
-git clone https://github.com/your-org/xai-clinical-prediction.git
+git clone https://github.com/NidhalZitouni/xai-clinical-prediction.git
 cd xai-clinical-prediction
 
 # Create virtual environment
