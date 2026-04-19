@@ -17,10 +17,7 @@ class LIMEExplainer:
     LIME (Local Interpretable Model-agnostic Explanations) wrapper
     """
     
-    def __init__(self, model: Any, X_train: pd.DataFrame, 
-                 feature_names: Optional[List[str]] = None,
-                 class_names: List[str] = None,
-                 mode: str = "classification"):
+    def __init__(self, model: Any, X_train: pd.DataFrame, feature_names: Optional[List[str]] = None,class_names: List[str] = None,mode: str = "classification"):
         """
         Initialize LIME explainer
         
