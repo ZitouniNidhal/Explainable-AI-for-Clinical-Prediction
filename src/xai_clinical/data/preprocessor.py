@@ -1,7 +1,9 @@
-# src/xai_clinical/data/preprocessor.py (complété)
 """
 Clinical data preprocessing
 """
+# Activer les features expérimentales de sklearn AVANT tous les imports sklearn
+from sklearn.experimental import enable_iterative_imputer
+
 import pandas as pd
 import numpy as np
 from sklearn.impute import SimpleImputer, IterativeImputer, KNNImputer
@@ -187,3 +189,4 @@ class DataPreprocessor:
             }).sort_values('score', ascending=False)
             return importance
         return None
+        

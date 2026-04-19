@@ -6,9 +6,11 @@ import lime
 import lime.lime_tabular
 import numpy as np
 import pandas as pd
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Union
 import matplotlib.pyplot as plt
-
+from lime.lime_tabular import LimeTabularExplainer
+from pathlib import Path
+import logging
 
 class LIMEExplainer:
     """

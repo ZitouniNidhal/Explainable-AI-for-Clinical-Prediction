@@ -1,12 +1,11 @@
+"""XAI Clinical Prediction Package."""
 
-"""
-XAI Clinical Prediction - Explainable model for clinical outcome prediction
-"""
+__version__ = "0.1.0"
 
-__version__ = "3.0.0"
-__author__ = "Nidhal Zitouni"
-
-from .config import Config
 from .pipeline import ClinicalPipeline
+from .data.loader import BRCADataLoader
+from .data.preprocessor import ClinicalDataPreprocessor
+from .models.trainer import ModelTrainer
+from .config import Config
 
-__all__ = ["Config", "ClinicalPipeline"]
+__all__ = ['ClinicalPipeline', 'BRCADataLoader', 'ClinicalDataPreprocessor', 'ModelTrainer', 'Config']

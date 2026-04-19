@@ -6,7 +6,8 @@ import pandas as pd
 from typing import Dict, List, Any, Optional
 import logging
 import shap  # Ajout de SHAP pour l'explication globale
-
+from .shap_explainer import SHAPExplainer
+from .lime_explainer import LIMEExplainer
 logger = logging.getLogger(__name__)
 
 class ClinicalValidator:
@@ -156,3 +157,102 @@ class ClinicalValidator:
         report.append("\n" + "="*60)
 
         return "\n".join(report)
+"""
+Global explainer for model-wide interpretability
+"""
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from typing import Optional, Dict, List
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+class GlobalExplainer:
+    """
+    Global explainer providing model-wide feature importance
+    """
+    
+    def __init__(self, model, feature_names: List[str] = None):
+        self.model = model
+        self.feature_names = feature_names
+        self.global_importance = None
+        
+    def explain(self, X: pd.DataFrame, method: str = 'permutation') -> pd.DataFrame:
+        """
+        Compute global feature importance
+        
+        Args:
+            X: Feature matrix
+            method: 'permutation', 'shap', or 'native'
+        """
+        if method == 'permutation':
+            return self._permutation_importance(X)
+        elif method == 'shap':
+            return self._shap_importance(X)
+        elif method == 'native':
+            return self._native_importance()
+        else:
+            raise ValueError(f"Unknown method: {method}")
+    
+    def _permutation_importance(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Calculate permutation importance"""
+        from sklearn.inspection import permutation_importance
+        
+        result = permutation_importance(
+            self.model, X, np.zeros(len(X)),  # y n'est pas utilisé pour permutation
+            n_repeats=10, random_state=42
+        )
+        
+        importance = pd.DataFrame({
+            'feature': self.feature_names or X.columns.tolist(),
+            'importance_mean': result.importances_mean,
+            'importance_std': result.importances_std
+        }).sort_values('importance_mean', ascending=False)
+        
+        self.global_importance = importance
+        return importance
+    
+    def _shap_importance(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Calculate SHAP-based global importance"""
+        import shap
+        
+        explainer = shap.TreeExplainer(self.model)
+        shap_values = explainer.shap_values(X)
+        
+        importance = pd.DataFrame({
+            'feature': self.feature_names or X.columns.tolist(),
+            'importance_mean': np.abs(shap_values).mean(axis=0)
+        }).sort_values('importance_mean', ascending=False)
+        
+        self.global_importance = importance
+        return importance
+    
+    def _native_importance(self) -> pd.DataFrame:
+        """Get native feature importance from tree-based models"""
+        if hasattr(self.model, 'feature_importances_'):
+            importance = pd.DataFrame({
+                'feature': self.feature_names,
+                'importance': self.model.feature_importances_
+            }).sort_values('importance', ascending=False)
+            return importance
+        else:
+            raise ValueError("Model does not have native feature importance")
+    
+    def plot_importance(self, top_n: int = 20, save_path: str = None):
+        """Plot global feature importance"""
+        if self.global_importance is None:
+            raise ValueError("Must call explain() first")
+        
+        plt.figure(figsize=(10, 8))
+        data = self.global_importance.head(top_n)
+        
+        sns.barplot(data=data, y='feature', x='importance_mean')
+        plt.title(f'Top {top_n} Global Feature Importance')
+        plt.tight_layout()
+        
+        if save_path:
+            plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        plt.show()

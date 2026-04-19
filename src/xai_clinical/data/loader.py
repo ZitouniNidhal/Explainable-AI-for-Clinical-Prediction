@@ -325,3 +325,21 @@ class DataLoader:
         y = dataset.target
         
         return X, y
+class BRCADataLoader(DataLoader):
+    """Chargeur spécifique pour BRCA TCGA"""
+    
+    def load_all(self):
+        """Charge et aligne les données cliniques et génomiques"""
+        clinical = self.load_clinical()
+        mrna = self.load_mrna()
+        
+        # Alignement par ID patient (12 premiers caractères TCGA)
+        clinical['PATIENT_ID_SHORT'] = clinical['PATIENT_ID'].str[:12]
+        mrna.index = mrna.index.str[:12]
+        
+        common = list(set(clinical['PATIENT_ID_SHORT']) & set(mrna.index))
+        
+        clinical = clinical[clinical['PATIENT_ID_SHORT'].isin(common)]
+        mrna = mrna.loc[common]
+        
+        return clinical, mrna
