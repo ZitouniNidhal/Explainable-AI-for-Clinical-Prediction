@@ -1,8 +1,5 @@
+# src/xai_clinical/evaluation/__init__.py
 
-from .classifiers import ClassifierFactory
-from .trainer import ModelTrainer
+from .clinical_metrics import calculate_clinical_metrics, print_clinical_report
 
-__all__ = [
-    "ClassifierFactory",
-    "ModelTrainer",
-]
+__all__ = ['calculate_clinical_metrics', 'print_clinical_report']

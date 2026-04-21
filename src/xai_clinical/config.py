@@ -1,7 +1,7 @@
-
 """
 Project configuration management
 """
+
 import yaml
 import os
 from pathlib import Path
@@ -53,48 +53,48 @@ class RobustnessConfig(BaseModel):
 
 class Config:
     """Main configuration manager"""
-    
+
     def __init__(self, config_path: str = "config/config.yaml"):
         self.config_path = Path(config_path)
         self._config = self._load_config()
-        
+
     def _load_config(self) -> Dict[str, Any]:
         """Load configuration from YAML file"""
         if not self.config_path.exists():
             raise FileNotFoundError(f"Configuration file not found: {self.config_path}")
-            
-        with open(self.config_path, 'r', encoding='utf-8') as f:
+
+        with open(self.config_path, "r", encoding="utf-8") as f:
             return yaml.safe_load(f)
-    
+
     @property
     def project(self) -> ProjectConfig:
-        return ProjectConfig(**self._config['project'])
-    
+        return ProjectConfig(**self._config["project"])
+
     @property
     def data(self) -> DataConfig:
-        return DataConfig(**self._config['data'])
-    
+        return DataConfig(**self._config["data"])
+
     @property
     def preprocessing(self) -> PreprocessingConfig:
-        return PreprocessingConfig(**self._config['preprocessing'])
-    
+        return PreprocessingConfig(**self._config["preprocessing"])
+
     @property
     def models(self) -> ModelConfig:
-        return ModelConfig(**self._config['models'])
-    
+        return ModelConfig(**self._config["models"])
+
     @property
     def explainability(self) -> ExplainabilityConfig:
-        return ExplainabilityConfig(**self._config['explainability'])
-    
+        return ExplainabilityConfig(**self._config["explainability"])
+
     @property
     def robustness(self) -> RobustnessConfig:
-        return RobustnessConfig(**self._config['robustness'])
-    
+        return RobustnessConfig(**self._config["robustness"])
+
     def get_path(self, key: str) -> Path:
         """Return absolute path for a given key"""
         base_path = Path(__file__).parent.parent.parent
-        return base_path / self._config['paths'][key]
-    
+        return base_path / self._config["paths"][key]
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert entire configuration to dictionary"""
         return self._config

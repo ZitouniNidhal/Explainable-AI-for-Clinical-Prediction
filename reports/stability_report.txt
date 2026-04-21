@@ -1,0 +1,37 @@
+============================================================
+EXPLANATION STABILITY REPORT
+============================================================
+
+1. GAUSSIAN NOISE STABILITY
+----------------------------------------
+
+noise_0.01:
+  Jaccard Index: 1.000 ± 0.000
+  Spearman Correlation: 0.998 ± 0.001
+
+noise_0.05:
+  Jaccard Index: 1.000 ± 0.000
+  Spearman Correlation: 0.997 ± 0.001
+
+noise_0.1:
+  Jaccard Index: 1.000 ± 0.000
+  Spearman Correlation: 0.997 ± 0.001
+
+2. MISSING VALUES STABILITY
+----------------------------------------
+
+missing_0.05:
+  Jaccard Index: 1.000 ± 0.000
+
+missing_0.1:
+  Jaccard Index: 1.000 ± 0.000
+
+missing_0.2:
+  Jaccard Index: 0.964 ± 0.073
+
+============================================================
+INTERPRETATION:
+- Jaccard > 0.7: Excellent stability
+- Jaccard 0.5-0.7: Good stability
+- Jaccard < 0.5: Poor stability
+============================================================
