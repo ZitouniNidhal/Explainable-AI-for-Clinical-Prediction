@@ -3,9 +3,10 @@
 from .base_model import BaseModel
 from .classifiers import ClassifierFactory
 from .trainer import ModelTrainer
-
+from .pancan_model import XAIPancanModel, GenePathwayAnalyzer
 # SUPPRIME ces lignes:
 # from .data.preprocessor import DataPreprocessor  # ← data/ n'est pas dans models/
 # from .data.loader import DataLoader  # ← data/ n'est pas dans models/
 
-__all__ = ["BaseModel", "ClassifierFactory", "ModelTrainer"]
+__all__ = ["BaseModel", "ClassifierFactory", "ModelTrainer","XAIPancanModel",
+    "GenePathwayAnalyzer"]
