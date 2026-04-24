@@ -200,13 +200,30 @@ class SurvivalTargetBuilder:
     
     @staticmethod
     def binary_survival(clinical_df: pd.DataFrame,
-                       time_col: str = 'OS.time',
-                       event_col: str = 'OS',
+                       time_col: str = 'OS_MONTHS',
+                       event_col: str = 'OS_STATUS',
                        cutoff_months: float = 60) -> pd.Series:
         """Crée une cible binaire: décédé avant X mois vs survivant."""
-        time = clinical_df[time_col] / 30.44
-        event = clinical_df[event_col]
-        target = ((event == 1) & (time <= cutoff_months)).astype(int)
+        # Détection automatique des colonnes si les défauts ne sont pas présents
+        if time_col not in clinical_df.columns:
+            time_col = next((c for c in ['OS.time', 'OS_MONTHS', 'days_to_death'] if c in clinical_df.columns), time_col)
+        if event_col not in clinical_df.columns:
+            event_col = next((c for c in ['OS', 'OS_STATUS', 'vital_status'] if c in clinical_df.columns), event_col)
+            
+        if time_col not in clinical_df.columns or event_col not in clinical_df.columns:
+            logger.warning(f"Colonnes de survie non trouvées: {time_col}, {event_col}")
+            return pd.Series(np.nan, index=clinical_df.index)
+
+        time = pd.to_numeric(clinical_df[time_col], errors='coerce')
+        # Conversion en mois si c'est en jours
+        if time.max() > 1000: # Probablement en jours
+            time = time / 30.44
+            
+        event = clinical_df[event_col].astype(str)
+        event_binary = event.str.contains('DECEASED|Dead|1|Progressed|Recurred', 
+                                         case=False, na=False).astype(int)
+        
+        target = ((event_binary == 1) & (time <= cutoff_months)).astype(int)
         logger.info(f"Cible binaire (cutoff={cutoff_months}mo): {target.value_counts().to_dict()}")
         return target
     

@@ -363,7 +363,7 @@ class PANCANBRCAFusion:
     def fuse_expression_clinical(self,
                                   pancan_expression: pd.DataFrame,
                                   brca_clinical: pd.DataFrame,
-                                  target: pd.Series) -> pd.DataFrame:
+                                  target: Optional[pd.Series] = None) -> pd.DataFrame:
         """Fusionne l'expression PANCAN avec les données cliniques BRCA."""
         pan_expr = self.standardize_ids(pancan_expression)
         brca_clin = self.standardize_ids(brca_clinical)
@@ -373,8 +373,6 @@ class PANCANBRCAFusion:
         
         if len(common) == 0:
             logger.error("Aucun échantillon commun trouvé!")
-            logger.info(f"IDs PANCAN exemple: {list(pan_expr.index[:5])}")
-            logger.info(f"IDs BRCA exemple: {list(brca_clin.index[:5])}")
             return pd.DataFrame()
         
         fused = pan_expr.loc[common].merge(
@@ -385,8 +383,13 @@ class PANCANBRCAFusion:
         )
         
         if target is not None:
-            target_aligned = target.loc[target.index.intersection(common)]
-            fused['TARGET'] = target_aligned
+            # Standardiser aussi les IDs de la cible
+            target_df = target.to_frame() if isinstance(target, pd.Series) else target
+            target_std = self.standardize_ids(target_df)
+            
+            common_target = target_std.index.intersection(fused.index)
+            fused = fused.loc[common_target].copy()
+            fused['TARGET'] = target_std.loc[common_target].iloc[:, 0]
         
         self.fused_data = fused
         logger.info(f"Données fusionnées: {fused.shape}")
