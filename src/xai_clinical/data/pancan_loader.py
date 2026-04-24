@@ -38,7 +38,7 @@ class PANCANLoader:
         
         logger.info(f"Chargement PANCAN expression: {filepath}")
         
-        df = pd.read_csv(filepath, sep='\\t', index_col=0, compression='infer')
+        df = pd.read_csv(filepath, sep='\t', index_col=0, compression='infer')
         df = df.T  # échantillons en lignes
         
         if self.cancer_type:
@@ -67,7 +67,7 @@ class PANCANLoader:
             filepath = candidates[0]
         
         logger.info(f"Chargement PANCAN CNV: {filepath}")
-        df = pd.read_csv(filepath, sep='\\t')
+        df = pd.read_csv(filepath, sep='\t')
         
         id_col = next((c for c in ['Sample', 'sample', 'SampleID'] if c in df.columns), None)
         if id_col:
@@ -91,7 +91,7 @@ class PANCANLoader:
             filepath = candidates[0]
         
         logger.info(f"Chargement manifest: {filepath}")
-        df = pd.read_csv(filepath, sep='\\t')
+        df = pd.read_csv(filepath, sep='\t')
         
         clinical_cols = ['case_id', 'case_submitter_id', 'primary_site', 
                         'disease_type', 'gender', 'race', 'ethnicity']
@@ -108,10 +108,24 @@ class PANCANLoader:
     
     def _extract_cancer_types(self, sample_ids: pd.Index) -> pd.Series:
         """Extrait le type de cancer depuis les IDs TCGA (TCGA-XX-XXXX)."""
+        # Liste des codes TSS pour BRCA identifiés dans le dataset local
+        brca_tss = {
+            '3C', '4H', '5L', '5T', 'A1', 'A2', 'A7', 'A8', 'AC', 'AN', 'AO', 'AQ', 'AR', 
+            'B6', 'BH', 'C8', 'D8', 'E2', 'E9', 'EW', 'GI', 'GM', 'HN', 'JL', 'LD', 'LL', 
+            'LQ', 'MS', 'OK', 'OL', 'PE', 'PL', 'S3', 'UL', 'UU', 'V7', 'W8', 'WT', 'XX', 'Z7'
+        }
+        
         types = []
         for sid in sample_ids:
             parts = str(sid).split('-')
-            types.append(parts[1] if len(parts) >= 2 else 'UNKNOWN')
+            if len(parts) >= 2:
+                tss = parts[1]
+                if self.cancer_type == "BRCA" and tss in brca_tss:
+                    types.append("BRCA")
+                else:
+                    types.append(tss) # On garde le TSS par défaut
+            else:
+                types.append('UNKNOWN')
         return pd.Series(types, index=sample_ids)
     
     def get_common_samples(self) -> List[str]:
@@ -206,7 +220,7 @@ class BRCALoader:
             raise FileNotFoundError(f"Fichier non trouvé: {filepath}")
         
         # cBioPortal: métadonnées en commentaires (#)
-        df = pd.read_csv(filepath, sep='\\t', comment='#', index_col=0)
+        df = pd.read_csv(filepath, sep='\t', comment='#', index_col=0)
         self.clinical_patient = df
         logger.info(f"Clinical patient: {df.shape}")
         return df
@@ -217,7 +231,7 @@ class BRCALoader:
         if not filepath.exists():
             raise FileNotFoundError(f"Fichier non trouvé: {filepath}")
         
-        df = pd.read_csv(filepath, sep='\\t', comment='#', index_col=0)
+        df = pd.read_csv(filepath, sep='\t', comment='#', index_col=0)
         self.clinical_sample = df
         logger.info(f"Clinical sample: {df.shape}")
         return df
@@ -233,7 +247,7 @@ class BRCALoader:
                 logger.warning("Aucun fichier mRNA seq trouvé")
                 return None
         
-        df = pd.read_csv(filepath, sep='\\t', index_col=0)
+        df = pd.read_csv(filepath, sep='\t', index_col=0)
         if df.shape[0] < df.shape[1]:
             df = df.T
         
@@ -252,7 +266,7 @@ class BRCALoader:
                 logger.warning("Aucun fichier mutations trouvé")
                 return None
         
-        df = pd.read_csv(filepath, sep='\\t', comment='#')
+        df = pd.read_csv(filepath, sep='\t', comment='#')
         self.mutations = df
         logger.info(f"Mutations: {df.shape}")
         return df
@@ -268,7 +282,7 @@ class BRCALoader:
                 logger.warning("Aucun fichier CNA trouvé")
                 return None
         
-        df = pd.read_csv(filepath, sep='\\t', index_col=0)
+        df = pd.read_csv(filepath, sep='\t', index_col=0)
         self.cna = df
         logger.info(f"CNA: {df.shape}")
         return df
@@ -336,9 +350,12 @@ class PANCANBRCAFusion:
         df = df.copy()
         
         if id_col and id_col in df.columns:
-            df.index = df[id_col].str[:12]
+            df.index = df[id_col].astype(str).str[:12]
         else:
             df.index = df.index.astype(str).str[:12]
+        
+        # S'assurer que l'index est en majuscules pour éviter les mismatches
+        df.index = df.index.str.upper()
         
         df = df[~df.index.duplicated(keep='first')]
         return df

@@ -63,6 +63,13 @@ class DataLoader:
     @staticmethod
     def load_pancan_expression(config: dict) -> pd.DataFrame:
         import os
+        
+        # Liste des codes TSS pour BRCA identifiés dans le dataset local
+        brca_tss = {
+            '3C', '4H', '5L', '5T', 'A1', 'A2', 'A7', 'A8', 'AC', 'AN', 'AO', 'AQ', 'AR', 
+            'B6', 'BH', 'C8', 'D8', 'E2', 'E9', 'EW', 'GI', 'GM', 'HN', 'JL', 'LD', 'LL', 
+            'LQ', 'MS', 'OK', 'OL', 'PE', 'PL', 'S3', 'UL', 'UU', 'V7', 'W8', 'WT', 'XX', 'Z7'
+        }
 
         expression_path = os.path.join(
             config["pancan_dir"], config["pancan_files"]["expression"]
@@ -77,9 +84,16 @@ class DataLoader:
 
         # Filtrer pour le type de cancer souhaité (ex. : BRCA)
         if "filter_cancer_type" in config:
-            cancer_samples = [
-                col for col in df.columns if config["filter_cancer_type"] in col
-            ]
+            target_type = config["filter_cancer_type"]
+            if target_type == "BRCA":
+                cancer_samples = [
+                    col for col in df.columns 
+                    if any(tss in col.split('-')[1:2] for tss in brca_tss)
+                ]
+            else:
+                cancer_samples = [
+                    col for col in df.columns if target_type in col
+                ]
             df = df[cancer_samples]
 
         print(f"Données d'expression chargées : {df.shape}")
@@ -89,6 +103,13 @@ class DataLoader:
     def load_pancan_mutations(config: dict) -> pd.DataFrame:
         """Charge les données de mutations PANCAN."""
         import os
+        
+        # Liste des codes TSS pour BRCA identifiés dans le dataset local
+        brca_tss = {
+            '3C', '4H', '5L', '5T', 'A1', 'A2', 'A7', 'A8', 'AC', 'AN', 'AO', 'AQ', 'AR', 
+            'B6', 'BH', 'C8', 'D8', 'E2', 'E9', 'EW', 'GI', 'GM', 'HN', 'JL', 'LD', 'LL', 
+            'LQ', 'MS', 'OK', 'OL', 'PE', 'PL', 'S3', 'UL', 'UU', 'V7', 'W8', 'WT', 'XX', 'Z7'
+        }
 
         mutations_path = os.path.join(
             config["pancan_dir"], config["pancan_files"]["mutations"]
@@ -102,9 +123,15 @@ class DataLoader:
 
         # Filtrer pour le type de cancer souhaité
         if "filter_cancer_type" in config:
-            df = df[
-                df["Tumor_Sample_Barcode"].str.contains(config["filter_cancer_type"])
-            ]
+            target_type = config["filter_cancer_type"]
+            if target_type == "BRCA":
+                df = df[
+                    df["Tumor_Sample_Barcode"].apply(lambda x: any(tss in str(x).split('-')[1:2] for tss in brca_tss))
+                ]
+            else:
+                df = df[
+                    df["Tumor_Sample_Barcode"].str.contains(target_type)
+                ]
 
         print(f"Données de mutations chargées : {len(df)} mutations")
         return df
@@ -378,18 +405,53 @@ class DataLoader:
 class BRCADataLoader(DataLoader):
     """Chargeur spécifique pour BRCA TCGA"""
 
+    def load_clinical(self) -> pd.DataFrame:
+        """Charge les données cliniques BRCA."""
+        path = Path(self.config.data.raw_dir) / "brca_tcga" / "data_clinical_patient.txt"
+        if not path.exists():
+            # Fallback si config n'est pas structuré ainsi
+            path = Path("data/raw/brca_tcga/data_clinical_patient.txt")
+        
+        df = pd.read_csv(path, sep="\t", comment="#")
+        logger.info(f"Clinical data loaded: {df.shape}")
+        return df
+
+    def load_mrna(self) -> pd.DataFrame:
+        """Charge les données d'expression mRNA BRCA."""
+        path = Path(self.config.data.raw_dir) / "brca_tcga" / "data_mrna_seq_v2_rsem.txt"
+        if not path.exists():
+            path = Path("data/raw/brca_tcga/data_mrna_seq_v2_rsem.txt")
+        
+        df = pd.read_csv(path, sep="\t", index_col=0)
+        # Transposer si les gènes sont en lignes
+        if df.shape[0] > 10000: # Heuristique pour détecter les gènes en lignes
+            df = df.T
+        logger.info(f"mRNA data loaded: {df.shape}")
+        return df
+
+    def load_mutations(self) -> pd.DataFrame:
+        """Charge les données de mutations BRCA."""
+        path = Path(self.config.data.raw_dir) / "brca_tcga" / "data_mutations.txt"
+        if not path.exists():
+            path = Path("data/raw/brca_tcga/data_mutations.txt")
+        
+        df = pd.read_csv(path, sep="\t", comment="#")
+        logger.info(f"Mutation data loaded: {df.shape}")
+        return df
+
     def load_all(self):
         """Charge et aligne les données cliniques et génomiques"""
         clinical = self.load_clinical()
         mrna = self.load_mrna()
 
         # Alignement par ID patient (12 premiers caractères TCGA)
-        clinical["PATIENT_ID_SHORT"] = clinical["PATIENT_ID"].str[:12]
-        mrna.index = mrna.index.str[:12]
+        clinical["PATIENT_ID_SHORT"] = clinical["PATIENT_ID"].str[:12].str.upper()
+        mrna.index = mrna.index.astype(str).str[:12].str.upper()
 
         common = list(set(clinical["PATIENT_ID_SHORT"]) & set(mrna.index))
+        logger.info(f"Common patients: {len(common)}")
 
-        clinical = clinical[clinical["PATIENT_ID_SHORT"].isin(common)]
+        clinical = clinical[clinical["PATIENT_ID_SHORT"].isin(common)].set_index("PATIENT_ID_SHORT")
         mrna = mrna.loc[common]
 
         return clinical, mrna
