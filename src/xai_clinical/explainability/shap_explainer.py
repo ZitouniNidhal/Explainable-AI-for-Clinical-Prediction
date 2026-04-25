@@ -89,29 +89,19 @@ class SHAPExplainer:
             Dictionary with SHAP values, feature values, and base value
         """
         if isinstance(X, pd.DataFrame):
-            X_array = X.values
+            X_input = X.iloc[[instance_idx]]
         else:
-            X_array = X
+            X_input = X[instance_idx:instance_idx+1]
 
-        # Calculate SHAP values
-        shap_values = self.explainer.shap_values(X_array)
-
-        # For binary classification, take positive class
-        if isinstance(shap_values, list):
-            shap_values = shap_values[1]
-
-        instance_shap = (
-            shap_values[instance_idx] if len(shap_values.shape) > 1 else shap_values
-        )
+        # Use helper for consistent 1D values
+        instance_shap = self._get_1d_shap_values(X_input)
 
         # Create result
         explanation = {
             "shap_values": instance_shap,
-            "feature_values": (
-                X_array[instance_idx] if len(X_array.shape) > 1 else X_array
-            ),
-            "base_value": self.expected_value,
-            "prediction": self.expected_value + np.sum(instance_shap),
+            "feature_values": X.iloc[instance_idx].values if isinstance(X, pd.DataFrame) else X[instance_idx],
+            "base_value": self.expected_value[1] if isinstance(self.expected_value, (list, np.ndarray)) else self.expected_value,
+            "prediction": (self.expected_value[1] if isinstance(self.expected_value, (list, np.ndarray)) else self.expected_value) + np.sum(instance_shap),
             "feature_names": self.feature_names,
         }
 
@@ -128,17 +118,59 @@ class SHAPExplainer:
             X.values if isinstance(X, pd.DataFrame) else X
         )
 
-        if isinstance(shap_values, list):
-            shap_values = shap_values[1]
+        # Handle different SHAP output formats (List, Explanation object, Multi-class array)
+        # 1. Explanation object
+        if hasattr(shap_values, 'values'):
+            values = shap_values.values
+        else:
+            values = shap_values
+
+        # 2. List of arrays (Binary classification often returns [class0_values, class1_values])
+        if isinstance(values, list):
+            values = values[1] if len(values) > 1 else values[0]
+
+        # 3. Multi-dimensional array (Samples, Features, Classes)
+        if len(values.shape) == 3:
+            # Assume binary/multi-class, take the positive/relevant class (index 1)
+            values = values[:, :, 1]
 
         # Mean absolute importance
-        importance = np.abs(shap_values).mean(axis=0)
+        importance = np.abs(values).mean(axis=0)
+
+        # Ensure importance is 1D
+        if len(importance.shape) > 1:
+            importance = importance.flatten()
 
         importance_df = pd.DataFrame(
             {"feature": self.feature_names, "shap_importance": importance}
         ).sort_values("shap_importance", ascending=False)
 
         return importance_df.head(max_display)
+
+    def _get_1d_shap_values(self, X_input) -> np.ndarray:
+        """Helper to get 1D SHAP values for a single instance or mean across instances."""
+        # Force conversion to array if it's an Explanation object
+        shap_out = self.explainer.shap_values(X_input)
+        
+        # Handle different SHAP output formats
+        if isinstance(shap_out, list):
+            # Binary classification usually [class0, class1]
+            values = shap_out[1] if len(shap_out) > 1 else shap_out[0]
+        elif hasattr(shap_out, 'values'):
+            values = shap_out.values
+        else:
+            values = shap_out
+
+        # Reduce dimensions
+        # 3D: (Samples, Features, Classes) -> (Samples, Features)
+        if len(values.shape) == 3:
+            values = values[:, :, 1]
+            
+        # If we passed a single instance, it might still have a sample dimension: (1, Features) -> (Features,)
+        if len(values.shape) == 2 and values.shape[0] == 1:
+            values = values[0]
+            
+        return values
 
     def plot_waterfall(
         self,
@@ -150,21 +182,19 @@ class SHAPExplainer:
         """
         Create waterfall plot for specific instance
         """
+        instance_x = X.iloc[[instance_idx]]
+        instance_values = self._get_1d_shap_values(instance_x)
+
         plt.figure(figsize=(10, 6))
-
-        shap_values = self.explainer.shap_values(X.values)
-        if isinstance(shap_values, list):
-            shap_values = shap_values[1]
-
         shap.waterfall_plot(
             shap.Explanation(
-                values=shap_values[instance_idx],
-                base_values=self.expected_value,
+                values=instance_values,
+                base_values=self.expected_value[1] if isinstance(self.expected_value, (list, np.ndarray)) else self.expected_value,
                 data=X.iloc[instance_idx].values,
                 feature_names=self.feature_names,
             ),
             max_display=max_display,
-            show=False,
+            show=False
         )
 
         plt.tight_layout()
@@ -182,18 +212,16 @@ class SHAPExplainer:
         """
         Create global summary plot
         """
+        # Handle multi-class
+        values = self._get_1d_shap_values(X.values)
+
         plt.figure(figsize=(12, 8))
-
-        shap_values = self.explainer.shap_values(X.values)
-        if isinstance(shap_values, list):
-            shap_values = shap_values[1]
-
         shap.summary_plot(
-            shap_values,
-            X.values,
+            values,
+            X,
             feature_names=self.feature_names,
-            max_display=max_display,
             plot_type=plot_type,
+            max_display=max_display,
             show=False,
         )
 
@@ -212,21 +240,19 @@ class SHAPExplainer:
         """
         Create dependence plot to analyze feature effect
         """
-        plt.figure(figsize=(10, 6))
-
-        shap_values = self.explainer.shap_values(X.values)
-        if isinstance(shap_values, list):
-            shap_values = shap_values[1]
+        # Handle multi-class
+        values = self._get_1d_shap_values(X.values)
 
         feature_idx = (
             self.feature_names.index(feature)
-            if feature in self.feature_names
+            if isinstance(feature, str)
             else feature
         )
 
+        plt.figure(figsize=(10, 6))
         shap.dependence_plot(
             feature_idx,
-            shap_values,
+            values,
             X.values,
             feature_names=self.feature_names,
             interaction_index=interaction_feature,

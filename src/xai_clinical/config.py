@@ -16,10 +16,17 @@ class ProjectConfig(BaseModel):
 
 
 class DataConfig(BaseModel):
-    use_synthetic: bool = True
+    dataset_name: str = "brca_tcga"
+    data_dir: str = "data/raw/brca_tcga"
+    pancan_dir: str = "data/raw/pancan"
+    clinical_file: str = "data_clinical_patient.txt"
+    genomic_files: list = []
+    pancan_files: Dict[str, str] = {}
+    target_column: str = "OS"
+    filter_cancer_type: Optional[str] = "BRCA"
+    use_synthetic: bool = False
     synthetic_samples: int = 2000
     external_data_path: Optional[str] = None
-    target_column: str = "clinical_outcome"
     test_size: float = 0.2
     validation_size: float = 0.1
     missing_threshold: float = 0.3
@@ -51,7 +58,7 @@ class RobustnessConfig(BaseModel):
     stability_metrics: list
 
 
-class Config:
+class ConfigLoader:
     """Main configuration manager"""
 
     def __init__(self, config_path: str = "config/config.yaml"):

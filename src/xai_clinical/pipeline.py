@@ -4,17 +4,18 @@ Complete XAI Pipeline for clinical prediction
 """
 
 import sys
-sys.stdout.reconfigure(encoding="utf-8")
+import os
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 import pandas as pd
 import numpy as np
 from pathlib import Path
 import logging
-import sys
 from datetime import datetime
 import json
 
-from .config import Config
+from .config import ConfigLoader
 from .data.synthetic_generator import SyntheticDataGenerator
 from .data.preprocessor import DataPreprocessor
 from .models.trainer import ModelTrainer
@@ -22,7 +23,9 @@ from .explainability.shap_explainer import SHAPExplainer
 from .explainability.lime_explainer import LIMEExplainer
 from .explainability.stability_analyzer import StabilityAnalyzer
 from .visualization.plots import plot_model_comparison, plot_confusion_matrix
+from .data.pancan_loader import PANCANLoader, BRCALoader, PANCANBRCAFusion
 
+os.makedirs("logs", exist_ok=True)
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -40,7 +43,7 @@ class ClinicalPipeline:
     """
 
     def __init__(self, config_path: str = "config/config.yaml"):
-        self.config = Config(config_path)
+        self.config = ConfigLoader(config_path)
         self.data = None
         self.target = None
         self.preprocessor = None
@@ -98,98 +101,53 @@ class ClinicalPipeline:
     # src/xai_clinical/pipeline.py - REMPLACE _load_data()
 
     def _load_data(self):
-        """Charge toutes les modalités omiques disponibles."""
-        logger.info("[DATA] Loading multi-omic BRCA TCGA data...")
+        """Charge toutes les modalités omiques en utilisant les loaders spécialisés."""
+        logger.info(f"[DATA] Loading multi-omic data (Filter: {self.config.data.filter_cancer_type})...")
 
-        data_dir = self.data_dir
+        # 1. Initialiser les loaders
+        pancan_dir = Path(self.config.data.pancan_dir)
+        brca_dir = self.data_dir # Path("data/raw/brca_tcga")
         
-        # 1. Données cliniques
-        clinical_file = data_dir / 'data_clinical_patient.tsv'
-        if not clinical_file.exists():
-            logger.warning(f"Clinical file not found: {clinical_file}")
+        self.pancan_loader = PANCANLoader(
+            str(pancan_dir), 
+            cancer_type=self.config.data.filter_cancer_type
+        )
+        self.brca_loader = BRCALoader(str(brca_dir))
+        
+        try:
+            # 2. Charger les expressions (PANCAN)
+            logger.info("  - Loading PANCAN gene expression...")
+            pancan_expr = self.pancan_loader.load_gene_expression()
+            
+            # 3. Charger les données cliniques (BRCA Local)
+            logger.info("  - Loading clinical data...")
+            clinical = self.brca_loader.get_merged_clinical()
+            
+            # 4. Construire la cible de survie
+            logger.info("  - Building survival target (24 months cutoff)...")
+            target = self.brca_loader.extract_survival_target(clinical, cutoff_months=24)
+            
+            # 5. Fusionner et Aligner
+            logger.info("  - Fusing and aligning modalities...")
+            fusion = PANCANBRCAFusion(self.pancan_loader, self.brca_loader)
+            self.fused_df = fusion.fuse_expression_clinical(pancan_expr, clinical, target)
+            
+            if self.fused_df.empty:
+                logger.error("Fusion result is empty! Falling back to synthetic data.")
+                return self._create_synthetic_data()
+            
+            # 6. Préparer pour le ML
+            self.X, self.y = fusion.prepare_ml_features(self.fused_df)
+            self.data = self.X
+            self.target = self.y
+            
+            logger.info(f"  - Final dataset: X={self.X.shape}, y={self.y.shape}")
+            return self.X, self.y
+            
+        except Exception as e:
+            logger.error(f"Error during data loading: {e}")
+            logger.info("Falling back to synthetic data...")
             return self._create_synthetic_data()
-        
-        clinical = pd.read_csv(clinical_file, sep='\t', skiprows=4)
-        clinical['PATIENT_ID_SHORT'] = clinical['PATIENT_ID'].str[:12]
-        
-        # 2. mRNA (expression génique)
-        mrna_file = data_dir / 'data_mrna_seq_v2_rsem.tsv'
-        if not mrna_file.exists():
-            logger.warning(f"mRNA file not found: {mrna_file}")
-            return self._create_synthetic_data()
-        
-        mrna = pd.read_csv(mrna_file, sep='\t')
-        mrna = mrna.set_index('Hugo_Symbol').drop('Entrez_Gene_Id', axis=1).T
-        mrna.index = mrna.index.str[:12]
-        mrna.columns = [f'GENE_{c}' for c in mrna.columns]
-        
-        # 3. Méthylation (optionnel)
-        methylation_file = data_dir / 'data_methylation_hm450.tsv'
-        methylation = None
-        if methylation_file.exists():
-            logger.info("  - Loading methylation data...")
-            meth = pd.read_csv(methylation_file, sep='\t')
-            meth = meth.set_index('Composite Element REF').T
-            meth.index = meth.index.str[:12]
-            meth.columns = [f'METH_{c}' for c in meth.columns]
-            methylation = meth
-        
-        # 4. Mutations (optionnel)
-        mutation_file = data_dir / 'data_mutations_extended.tsv'
-        mutations = None
-        if mutation_file.exists():
-            logger.info("  - Loading mutation data...")
-            mut = pd.read_csv(mutation_file, sep='\t')
-            mut_matrix = mut.pivot_table(
-                index='Tumor_Sample_Barcode',
-                columns='Hugo_Symbol',
-                values='Variant_Classification',
-                aggfunc='count',
-                fill_value=0
-            )
-            mut_matrix.index = mut_matrix.index.str[:12]
-            mut_matrix.columns = [f'MUT_{c}' for c in mut_matrix.columns]
-            mutations = mut_matrix
-        
-        # Alignement des échantillons
-        all_data = {'clinical': clinical.set_index('PATIENT_ID_SHORT'), 'mrna': mrna}
-        if methylation is not None: all_data['methylation'] = methylation
-        if mutations is not None: all_data['mutations'] = mutations
-        
-        common = set(all_data['clinical'].index)
-        for key, df in all_data.items():
-            if key != 'clinical':
-                common = common.intersection(df.index)
-        
-        logger.info(f"  - Samples with all modalities: {len(common)}")
-        
-        # Filtrer
-        clinical = clinical[clinical['PATIENT_ID_SHORT'].isin(common)]
-        mrna = mrna.loc[list(common)]
-        
-        # Combiner features
-        features = [mrna.reset_index(drop=True)]
-        if methylation is not None:
-            features.append(methylation.loc[list(common)].reset_index(drop=True))
-        if mutations is not None:
-            features.append(mutations.loc[list(common)].reset_index(drop=True))
-        
-        # Features cliniques
-        X_clinical = self._prepare_clinical_features(clinical)
-        
-        # Combiner tout
-        X_omics = pd.concat(features, axis=1)
-        X_combined = pd.concat([X_clinical.reset_index(drop=True), X_omics], axis=1)
-        
-        # Cible
-        self.y = self._create_target(clinical)
-        self.X = X_combined
-        self.data = self.X
-        self.target = pd.Series(self.y, name='target')
-        
-        logger.info(f"  - Final: X={self.X.shape}, Features={len(self.X.columns)}")
-        
-        return self.X, self.y
     # src/xai_clinical/pipeline.py - REMPLACE _create_target()
 
     def _create_target(self, clinical_df):
@@ -200,26 +158,33 @@ class ClinicalPipeline:
         df = clinical_df.copy()
         
         # Score de risque combiné (tous connus AVANT l'opération)
-        risk_score = pd.DataFrame({
-            # Stade tumoral (connu par biopsie)
-            'stage_advanced': df['TUMOR_STAGE'].isin(['Stage III', 'Stage IV']).astype(int) * 3,
+        risk_score = pd.DataFrame(index=df.index)
+        
+        # Stade tumoral
+        stage_col = 'AJCC_PATHOLOGIC_TUMOR_STAGE'
+        if stage_col in df.columns:
+            risk_score['stage_advanced'] = df[stage_col].isin(['Stage III', 'Stage III A', 'Stage III B', 'Stage III C', 'Stage IV']).astype(int) * 3
+        
+        # Biomarqueurs agressifs
+        er_col = 'ER_STATUS_BY_IHC'
+        pr_col = 'PR_STATUS_BY_IHC'
+        her2_col = 'IHC_HER2'
+        
+        if all(c in df.columns for c in [er_col, pr_col, her2_col]):
+            risk_score['triple_negative'] = (
+                (df[er_col] == 'Negative') & 
+                (df[pr_col] == 'Negative') & 
+                (df[her2_col].isin(['Negative', '0', '1+']))
+            ).astype(int) * 3
             
-            # Grade histologique
-            'grade_high': df['GRADE'].isin(['3', '4']).astype(int) * 2,
+        if her2_col in df.columns:
+            risk_score['her2_positive'] = df[her2_col].isin(['Positive', '3+', '2+']).astype(int) * 2
             
-            # Biomarqueurs agressifs
-            'triple_negative': (
-                (df['ER_STATUS'] == 'Negative') & 
-                (df['PR_STATUS'] == 'Negative') & 
-                (df['HER2_STATUS'] == 'Negative')
-            ).astype(int) * 3,
-            
-            'her2_positive': (df['HER2_STATUS'] == 'Positive').astype(int) * 2,
-            
-            # Facteurs démographiques
-            'age_risk': (df['AGE'] > 70).astype(int) * 1,
-            'young_age': (df['AGE'] < 35).astype(int) * 1,
-        })
+        # Facteurs démographiques
+        if 'AGE' in df.columns:
+            age = pd.to_numeric(df['AGE'], errors='coerce').fillna(60)
+            risk_score['age_risk'] = (age > 70).astype(int) * 1
+            risk_score['young_age'] = (age < 35).astype(int) * 1
         
         # Score total
         total_score = risk_score.sum(axis=1)
@@ -232,44 +197,51 @@ class ClinicalPipeline:
         
         return complication.values
 
-    def _prepare_features(self, clinical, mrna):
-        """Prépare les features."""
-        # Features cliniques
-        clinical_features = ["AGE", "TUMOR_STAGE", "GRADE", "ER_STATUS", "PR_STATUS", "HER2_STATUS"]
-        X_clinical = clinical[clinical_features].copy()
-
-        # Encodage
-        X_clinical["TUMOR_STAGE_ENC"] = X_clinical["TUMOR_STAGE"].map({
-            "Stage I": 1, "Stage IA": 1, "Stage IB": 1,
-            "Stage II": 2, "Stage IIA": 2, "Stage IIB": 2,
-            "Stage III": 3, "Stage IIIA": 3, "Stage IIIB": 3, "Stage IIIC": 3,
-            "Stage IV": 4
-        }).fillna(0)
-
-        X_clinical["GRADE_ENC"] = X_clinical["GRADE"].map({
-            "1": 1, "2": 2, "3": 3, "4": 4
-        }).fillna(0)
-
-        for col in ["ER_STATUS", "PR_STATUS", "HER2_STATUS"]:
-            X_clinical[col] = X_clinical[col].map({
-                "Positive": 1, "Negative": 0, "Indeterminate": 0.5
-            }).fillna(0)
-
-        X_clinical = X_clinical[["AGE", "TUMOR_STAGE_ENC", "GRADE_ENC", "ER_STATUS", "PR_STATUS", "HER2_STATUS"]]
-
-        # Features génomiques
-        gene_vars = mrna.var().sort_values(ascending=False)
-        top_genes = gene_vars.head(100).index
-        X_genomic = np.log2(mrna[top_genes] + 1)
-        X_genomic.columns = [f"GENE_{col}" for col in X_genomic.columns]
-
-        # Combiner
-        X_combined = pd.concat([
-            X_clinical.reset_index(drop=True),
-            X_genomic.reset_index(drop=True)
-        ], axis=1)
-
-        return X_combined
+    def _prepare_clinical_features(self, clinical_df: pd.DataFrame) -> pd.DataFrame:
+        """Prépare et encode les variables cliniques réelles de TCGA-BRCA."""
+        # Mapping des colonnes réelles trouvées dans data_clinical_patient.txt
+        col_mapping = {
+            'AGE': 'AGE',
+            'AJCC_PATHOLOGIC_TUMOR_STAGE': 'STAGE',
+            'ER_STATUS_BY_IHC': 'ER',
+            'PR_STATUS_BY_IHC': 'PR',
+            'IHC_HER2': 'HER2'
+        }
+        
+        # Sélectionner les colonnes disponibles
+        available_cols = [c for c in col_mapping.keys() if c in clinical_df.columns]
+        X_clin = clinical_df[available_cols].copy()
+        
+        # Encodage du Stage
+        if 'AJCC_PATHOLOGIC_TUMOR_STAGE' in X_clin.columns:
+            stage_map = {
+                'Stage I': 1, 'Stage IA': 1, 'Stage IB': 1,
+                'Stage II': 2, 'Stage IIA': 2, 'Stage IIB': 2,
+                'Stage III': 3, 'Stage IIIA': 3, 'Stage IIIB': 3, 'Stage IIIC': 3,
+                'Stage IV': 4
+            }
+            X_clin['STAGE_ENC'] = X_clin['AJCC_PATHOLOGIC_TUMOR_STAGE'].map(stage_map).fillna(0)
+        
+        # Encodage ER/PR/HER2
+        for col in ['ER_STATUS_BY_IHC', 'PR_STATUS_BY_IHC']:
+            if col in X_clin.columns:
+                X_clin[f'{col}_ENC'] = X_clin[col].map({
+                    'Positive': 1, 'Negative': 0, 'Indeterminate': 0.5
+                }).fillna(0)
+        
+        if 'IHC_HER2' in X_clin.columns:
+            her2_map = {'0': 0, '1+': 0, '2+': 1, '3+': 2, 'Positive': 2, 'Negative': 0}
+            X_clin['HER2_ENC'] = X_clin['IHC_HER2'].map(her2_map).fillna(0)
+            
+        # Garder uniquement les numériques
+        X_numeric = X_clin.select_dtypes(include=[np.number])
+        
+        # S'assurer d'avoir au moins AGE
+        if 'AGE' in X_clin.columns:
+            age_numeric = pd.to_numeric(X_clin['AGE'], errors='coerce')
+            X_numeric['AGE'] = age_numeric.fillna(age_numeric.median() if not age_numeric.dropna().empty else 60)
+            
+        return X_numeric
 
     def _create_synthetic_data(self):
         """Crée des données synthétiques pour test."""

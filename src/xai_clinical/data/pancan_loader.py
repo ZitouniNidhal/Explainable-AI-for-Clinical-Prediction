@@ -220,7 +220,11 @@ class BRCALoader:
             raise FileNotFoundError(f"Fichier non trouvé: {filepath}")
         
         # cBioPortal: métadonnées en commentaires (#)
-        df = pd.read_csv(filepath, sep='\t', comment='#', index_col=0)
+        # On utilise PATIENT_ID comme index au lieu de la 1ère colonne (souvent un GUID)
+        df = pd.read_csv(filepath, sep='\t', comment='#')
+        if 'PATIENT_ID' in df.columns:
+            df = df.set_index('PATIENT_ID')
+        
         self.clinical_patient = df
         logger.info(f"Clinical patient: {df.shape}")
         return df
@@ -231,7 +235,12 @@ class BRCALoader:
         if not filepath.exists():
             raise FileNotFoundError(f"Fichier non trouvé: {filepath}")
         
-        df = pd.read_csv(filepath, sep='\t', comment='#', index_col=0)
+        df = pd.read_csv(filepath, sep='\t', comment='#')
+        if 'PATIENT_ID' in df.columns:
+            df = df.set_index('PATIENT_ID')
+        elif 'SAMPLE_ID' in df.columns:
+            df = df.set_index('SAMPLE_ID')
+            
         self.clinical_sample = df
         logger.info(f"Clinical sample: {df.shape}")
         return df
@@ -320,14 +329,22 @@ class BRCALoader:
         event_col_found = next((c for c in event_candidates if c in clinical_df.columns), None)
         
         if time_col_found and event_col_found:
+            # 1. Préparer les données
+            clinical_df = clinical_df.copy()
+            clinical_df.index = clinical_df.index.astype(str).str[:12].str.upper()
+            
             time = pd.to_numeric(clinical_df[time_col_found], errors='coerce')
             event = clinical_df[event_col_found].astype(str)
             event_binary = event.str.contains('DECEASED|Dead|1|Progressed|Recurred', 
                                              case=False, na=False).astype(int)
             
-            target = ((event_binary == 1) & (time <= cutoff_months)).astype(int)
+            # 2. Créer la cible temporaire
+            temp_target = ((event_binary == 1) & (time <= cutoff_months)).astype(int)
             
-            logger.info(f"Cible survie: {target.value_counts().to_dict()}")
+            # 3. Dédoublonner par patient : si un échantillon est 1, le patient est 1
+            target = temp_target.groupby(level=0).max()
+            
+            logger.info(f"Cible survie calculée (cut-off {cutoff_months}m): {target.value_counts().to_dict()}")
             return target
         else:
             logger.warning("Colonnes de survie non trouvées")
@@ -384,12 +401,13 @@ class PANCANBRCAFusion:
         
         if target is not None:
             # Standardiser aussi les IDs de la cible
-            target_df = target.to_frame() if isinstance(target, pd.Series) else target
-            target_std = self.standardize_ids(target_df)
+            target_std = target.copy()
+            target_std.index = target_std.index.astype(str).str[:12].str.upper()
+            target_std = target_std.groupby(level=0).max() # Un seul label par patient
             
             common_target = target_std.index.intersection(fused.index)
             fused = fused.loc[common_target].copy()
-            fused['TARGET'] = target_std.loc[common_target].iloc[:, 0]
+            fused['TARGET'] = target_std.loc[common_target]
         
         self.fused_data = fused
         logger.info(f"Données fusionnées: {fused.shape}")

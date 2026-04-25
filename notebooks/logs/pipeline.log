@@ -1,0 +1,9 @@
+2026-04-25 15:42:22,434 - xai_clinical.data.pancan_loader - INFO - Clinical patient: (1097, 110)
+2026-04-25 15:42:22,454 - xai_clinical.data.pancan_loader - INFO - Clinical sample: (1108, 26)
+2026-04-25 15:42:22,463 - xai_clinical.data.pancan_loader - INFO - Clinical merged: (1108, 136)
+2026-04-25 15:42:22,488 - xai_clinical.data.pancan_loader - INFO - Cible survie calculée (cut-off 24m): {0: 1062, 1: 39}
+2026-04-25 15:42:30,233 - xai_clinical.data.pancan_loader - INFO - Chargement PANCAN expression: c:\Users\nidha\Desktop\xai_clinical_prediction\data\raw\pancan\EBPlusPlusAdjustPANCAN.tsv
+2026-04-25 15:43:14,984 - xai_clinical.data.pancan_loader - INFO - Application log2(x+1)
+2026-04-25 15:43:17,427 - xai_clinical.data.pancan_loader - INFO - Expression PANCAN: (11069, 20531)
+2026-04-25 15:43:23,926 - xai_clinical.data.pancan_loader - INFO - Échantillons communs PANCAN+BRCA: 1097
+2026-04-25 15:43:24,195 - xai_clinical.data.pancan_loader - INFO - Données fusionnées: (1097, 20668)

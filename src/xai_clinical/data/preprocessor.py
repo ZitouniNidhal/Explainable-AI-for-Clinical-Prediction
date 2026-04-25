@@ -133,11 +133,26 @@ class DataPreprocessor:
 
     def _fit_feature_selection(self, X: pd.DataFrame, y: pd.Series) -> pd.DataFrame:
         """Select most informative features"""
-        max_features = min(self.config.preprocessing.max_features, X.shape[1])
+        method = getattr(self.config.preprocessing, 'feature_selection', 'f_classif')
+        max_features = min(getattr(self.config.preprocessing, 'max_features', 50), X.shape[1])
 
-        selector = SelectKBest(score_func=mutual_info_classif, k=max_features)
+        if method == "mutual_info":
+            score_func = mutual_info_classif
+        elif method == "chi2":
+            from sklearn.feature_selection import chi2
+            score_func = chi2
+        else:
+            from sklearn.feature_selection import f_classif
+            score_func = f_classif
 
-        X_selected = selector.fit_transform(X, y)
+        selector = SelectKBest(score_func=score_func, k=max_features)
+        
+        # S'assurer que les données sont positives pour chi2 si nécessaire
+        X_input = X.copy()
+        if method == "chi2" and (X_input < 0).any().any():
+            X_input = X_input - X_input.min().min()
+
+        X_selected = selector.fit_transform(X_input, y)
         self.selected_features = X.columns[selector.get_support()].tolist()
         self.feature_selector = selector
 
@@ -180,3 +195,52 @@ class DataPreprocessor:
             ).sort_values("score", ascending=False)
             return importance
         return None
+
+
+class ClinicalPreprocessor:
+    """
+    Simplified preprocessor for notebooks (v2 pipeline)
+    """
+
+    def __init__(self, n_features: int = 100):
+        self.n_features = n_features
+        self.imputer = SimpleImputer(strategy="median")
+        self.scaler = StandardScaler()
+        self.selector = SelectKBest(score_func=f_classif, k=n_features)
+        self.selected_features = None
+
+    def fit_transform(
+        self,
+        X_train: pd.DataFrame,
+        y_train: pd.Series,
+        X_val: Optional[pd.DataFrame] = None,
+        X_test: Optional[pd.DataFrame] = None,
+    ) -> Tuple:
+        """Fit on train and transform everything."""
+        # Ensure only numeric
+        X_train_num = X_train.select_dtypes(include=[np.number])
+        
+        # Impute
+        X_train_imp = pd.DataFrame(self.imputer.fit_transform(X_train_num), columns=X_train_num.columns, index=X_train_num.index)
+        
+        # Scale
+        X_train_scaled = pd.DataFrame(self.scaler.fit_transform(X_train_imp), columns=X_train_imp.columns, index=X_train_imp.index)
+        
+        # Select
+        k = min(self.n_features, X_train_scaled.shape[1])
+        self.selector.set_params(k=k)
+        X_train_sel = self.selector.fit_transform(X_train_scaled, y_train)
+        self.selected_features = X_train_scaled.columns[self.selector.get_support()].tolist()
+        
+        X_train_final = pd.DataFrame(X_train_sel, columns=self.selected_features, index=X_train.index)
+        
+        # We don't transform val/test here in this specific return signature but we return transformed train
+        return X_train_final, y_train
+
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Apply fitted transformations."""
+        X_num = X.select_dtypes(include=[np.number])
+        X_imp = self.imputer.transform(X_num)
+        X_scaled = self.scaler.transform(X_imp)
+        X_sel = X_scaled[:, self.selector.get_support()]
+        return pd.DataFrame(X_sel, columns=self.selected_features, index=X.index)

@@ -1,6 +1,6 @@
 # XAI Clinical Prediction - Research Report
 
-**Date:** 2026-04-23 13:50
+**Date:** 2026-04-24 20:45
 
 ## Abstract
 
@@ -9,8 +9,8 @@ This study develops an explainable machine learning model for predicting post-op
 ## 1. Dataset
 
 - **Source**: TCGA-BRCA
-- **Samples**: 500
-- **Features**: 20
+- **Samples**: 1097
+- **Features**: 20533
 - **Target**: High surgical risk (composite biological score)
 
 ## 2. Methods
@@ -36,35 +36,35 @@ This study develops an explainable machine learning model for predicting post-op
 
 | Model | Val AUC | Test AUC | Sensitivity | Specificity |
 |-------|---------|----------|-------------|-------------|
-| logistic_regression | 0.915 | 0.950 | 0.800 | 0.870 |
-| random_forest | 0.966 | 0.950 | 0.840 | 0.913 |
-| xgboost | 0.970 | 0.950 | 0.880 | 0.957 |
-| lightgbm | 0.984 | 0.950 | 0.880 | 1.000 |
+| logistic_regression | 0.675 | 0.400 | 0.500 | 0.105 |
+| random_forest | 0.608 | 0.400 | 0.000 | 0.000 |
+| xgboost | 0.634 | 0.400 | 0.000 | 0.000 |
+| lightgbm | 0.476 | 0.400 | 0.000 | 0.000 |
 
 ### 3.2 Best Model Performance
 
-- **Model**: lightgbm
-- **AUC-ROC**: 0.950
-- **Sensitivity**: 0.920
-- **Specificity**: 0.880
-- **PPV**: 0.885
-- **NPV**: 0.917
-- **F1-Score**: 0.902
+- **Model**: logistic_regression
+- **AUC-ROC**: 0.400
+- **Sensitivity**: 0.000
+- **Specificity**: 0.887
+- **PPV**: 0.000
+- **NPV**: 0.959
+- **F1-Score**: 0.000
 
 ### 3.3 Feature Importance
 
 Top predictive features (SHAP):
 
-- **feature_0**: 2.9669
-- **feature_19**: 2.0228
-- **feature_4**: 1.6381
-- **feature_18**: 1.1321
-- **feature_13**: 1.1134
-- **feature_17**: 1.0228
-- **feature_10**: 0.8846
-- **feature_7**: 0.7913
-- **feature_2**: 0.7906
-- **feature_14**: 0.7428
+- **VSIG8|391123**: 0.0872
+- **DNAH11|8701**: 0.0713
+- **USF1|7391**: 0.0562
+- **TAGLN2|8407**: 0.0509
+- **IL20RB|53833**: 0.0465
+- **WDR17|116966**: 0.0433
+- **LCN1|3933**: 0.0399
+- **KRT78|196374**: 0.0383
+- **EXT1|2131**: 0.0358
+- **ACCSL|390110**: 0.0332
 
 ## 4. Clinical Interpretation
 

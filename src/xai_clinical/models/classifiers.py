@@ -54,14 +54,13 @@ class ClassifierFactory:
 
         elif name == 'xgboost':
             # CORRECTION: Ajouter eval_metric et use_label_encoder
-            return xgb.XGBClassifier(
-                **params,
-                random_state=random_state,
-                eval_metric='logloss',
-                use_label_encoder=False
-            )
+            default_params = {
+                "random_state": random_state,
+                "eval_metric": 'logloss',
+                "use_label_encoder": False
+            }
             default_params.update(params)
-            return XGBClassifier(**default_params)
+            return xgb.XGBClassifier(**default_params)
 
         elif name == "lightgbm":
             default_params = {"random_state": random_state, "n_jobs": -1, "verbose": -1}
@@ -76,39 +75,37 @@ class ClassifierFactory:
         """Return parameter distributions for optimization"""
         if name == "logistic_regression":
             return {
-                "C": optuna.distributions.LogUniformDistribution(1e-3, 1e2),
-                "penalty": optuna.distributions.CategoricalDistribution(["l1", "l2"]),
-                "solver": optuna.distributions.CategoricalDistribution(
-                    ["liblinear", "saga"]
-                ),
+                "C": FloatDistribution(1e-3, 1e2, log=True),
+                "penalty": CategoricalDistribution(["l1", "l2"]),
+                "solver": CategoricalDistribution(["liblinear", "saga"]),
             }
         elif name == "random_forest":
             return {
-                "n_estimators": optuna.distributions.IntUniformDistribution(50, 300),
-                "max_depth": optuna.distributions.IntUniformDistribution(3, 20),
-                "min_samples_split": optuna.distributions.IntUniformDistribution(2, 20),
-                "min_samples_leaf": optuna.distributions.IntUniformDistribution(1, 10),
+                "n_estimators": IntDistribution(50, 300),
+                "max_depth": IntDistribution(3, 20),
+                "min_samples_split": IntDistribution(2, 20),
+                "min_samples_leaf": IntDistribution(1, 10),
             }
         elif name == "xgboost":
             return {
-                "n_estimators": optuna.distributions.IntUniformDistribution(50, 300),
-                "max_depth": optuna.distributions.IntUniformDistribution(3, 10),
-                "learning_rate": optuna.distributions.LogUniformDistribution(1e-3, 0.5),
-                "subsample": optuna.distributions.UniformDistribution(0.6, 1.0),
-                "colsample_bytree": optuna.distributions.UniformDistribution(0.6, 1.0),
-                "reg_alpha": optuna.distributions.LogUniformDistribution(1e-8, 10.0),
-                "reg_lambda": optuna.distributions.LogUniformDistribution(1e-8, 10.0),
+                "n_estimators": IntDistribution(50, 300),
+                "max_depth": IntDistribution(3, 10),
+                "learning_rate": FloatDistribution(1e-3, 0.5, log=True),
+                "subsample": FloatDistribution(0.6, 1.0),
+                "colsample_bytree": FloatDistribution(0.6, 1.0),
+                "reg_alpha": FloatDistribution(1e-8, 10.0, log=True),
+                "reg_lambda": FloatDistribution(1e-8, 10.0, log=True),
             }
         elif name == "lightgbm":
             return {
-                "n_estimators": optuna.distributions.IntUniformDistribution(50, 300),
-                "num_leaves": optuna.distributions.IntUniformDistribution(20, 100),
-                "learning_rate": optuna.distributions.LogUniformDistribution(1e-3, 0.5),
-                "feature_fraction": optuna.distributions.UniformDistribution(0.6, 1.0),
-                "bagging_fraction": optuna.distributions.UniformDistribution(0.6, 1.0),
-                "bagging_freq": optuna.distributions.IntUniformDistribution(1, 10),
-                "reg_alpha": optuna.distributions.LogUniformDistribution(1e-8, 10.0),
-                "reg_lambda": optuna.distributions.LogUniformDistribution(1e-8, 10.0),
+                "n_estimators": IntDistribution(50, 300),
+                "num_leaves": IntDistribution(20, 100),
+                "learning_rate": FloatDistribution(1e-3, 0.5, log=True),
+                "feature_fraction": FloatDistribution(0.6, 1.0),
+                "bagging_fraction": FloatDistribution(0.6, 1.0),
+                "bagging_freq": IntDistribution(1, 10),
+                "reg_alpha": FloatDistribution(1e-8, 10.0, log=True),
+                "reg_lambda": FloatDistribution(1e-8, 10.0, log=True),
             }
         else:
             raise ValueError(f"Unsupported classifier: {name}")
