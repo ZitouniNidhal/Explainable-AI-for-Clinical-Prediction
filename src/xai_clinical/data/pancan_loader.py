@@ -27,8 +27,8 @@ class PANCANLoader:
         self.clinical_data = None
         self.sample_ids = None
         
-    def load_gene_expression(self, filepath: Optional[str] = None) -> pd.DataFrame:
-        """Charge EBPlusPlusAdjustPANCAN.tsv."""
+    def load_gene_expression(self, filepath: Optional[str] = None, top_genes: Optional[int] = 5000) -> pd.DataFrame:
+        """Charge EBPlusPlusAdjustPANCAN.tsv et filtre par variance."""
         if filepath is None:
             candidates = list(self.data_dir.glob("EBPlusPlusAdjustPANCAN*")) + \
                         list(self.data_dir.glob("*geneEx*"))
@@ -38,6 +38,7 @@ class PANCANLoader:
         
         logger.info(f"Chargement PANCAN expression: {filepath}")
         
+        # Lecture optimisée (les gènes sont en index, les patients en colonnes)
         df = pd.read_csv(filepath, sep='\t', index_col=0, compression='infer')
         df = df.T  # échantillons en lignes
         
@@ -47,13 +48,20 @@ class PANCANLoader:
             df = df[mask]
             logger.info(f"Filtrage {self.cancer_type}: {len(df)} échantillons")
         
+        # Sélection des gènes par variance AVANT de continuer pour économiser la mémoire
+        if top_genes and df.shape[1] > top_genes:
+            logger.info(f"Sélection des {top_genes} gènes les plus variables...")
+            variances = df.var()
+            top_genes_idx = variances.nlargest(top_genes).index
+            df = df[top_genes_idx]
+
         if df.max().max() > 100:
             logger.info("Application log2(x+1)")
             df = np.log2(df + 1)
         
         self.expression_data = df
         self.sample_ids = set(df.index)
-        logger.info(f"Expression PANCAN: {df.shape}")
+        logger.info(f"Expression PANCAN finale: {df.shape}")
         return df
     
     def load_cnv_data(self, filepath: Optional[str] = None) -> Optional[pd.DataFrame]:

@@ -9,7 +9,7 @@ import pandas as pd
 import numpy as np
 from sklearn.impute import SimpleImputer, IterativeImputer, KNNImputer
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
-from sklearn.feature_selection import mutual_info_classif, SelectKBest
+from sklearn.feature_selection import mutual_info_classif, SelectKBest, f_classif
 from imblearn.over_sampling import SMOTE, ADASYN
 from imblearn.under_sampling import RandomUnderSampler
 from typing import Tuple, Optional, List
@@ -183,8 +183,9 @@ class DataPreprocessor:
 
         return (
             pd.DataFrame(X_resampled, columns=X.columns),
-            pd.Series(y_resampled, name=y.name),
+            pd.Series(y_resampled, name=y.name, index=range(len(y_resampled))),
         )
+
 
     def get_feature_importance(self) -> pd.DataFrame:
         """Return feature importance if available"""

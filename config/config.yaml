@@ -1,194 +1,184 @@
 # ============================================
-# Configuration globale du projet
+# Configuration globale du projet (Version SOTA)
 # ============================================
 project:
-  name: "XAI Clinical Prediction for BRCA"
-  version: "1.0.0"
-  random_state: 42  # Graine aléatoire pour la reproductibilité
+  name: "XAI Pan-Cancer SOTA Prediction"
+  version: "2.0.0"
+  random_state: 42
+
+# ============================================
+# Chemins du projet
+# ============================================
+paths:
+  data: "data"
+  raw_data: "data/raw"
+  processed_data: "data/processed"
+  models: "models"
+  results: "results"
+  figures: "figures"
+  logs: "logs"
+  reports: "reports"
+
 
 # ============================================
 # Configuration des données
 # ============================================
 data:
-  # --- Source des données ---
-  dataset_name: "brca_tcga"  # Nom du dataset principal
-  data_dir: "data/raw/brca_tcga"  # Dossier des données BRCA_TCGA
-  pancan_dir: "data/raw/pancan"  # Dossier des données PANCAN (optionnel)
-
-  # --- Fichiers BRCA_TCGA ---
-  clinical_file: "data_clinical_patient.txt"  # Fichier clinique principal
-  genomic_files:  # Fichiers génomiques BRCA
+  dataset_name: "brca_tcga"
+  data_dir: "data/raw/brca_tcga"
+  pancan_dir: "data/raw/pancan"
+  clinical_file: "data_clinical_patient.txt"
+  genomic_files:
     - "data_cna.txt"
-    - "data_methylation_hm450.txt"
     - "data_mrna_seq_v2_rsem.txt"
     - "data_mutations.txt"
-
-  # --- Fichiers PANCAN (optionnels) ---
-  pancan_files:
-    expression: "EBPlusPlusAdjustPANCAN_IlluminaHiSeq.tsv"
-    mutations: "TCGA_mastercalls.abs_tables_JEdit.fixed.tsv"
-    manifest: "gdc_manifest.2025-11-25.txt"
-
-  # --- Cible et filtrage ---
-  target_column: "OS"  # Variable cible (Overall Survival ou autre)
-  filter_cancer_type: null  # null pour charger TOUS les cancers, ou un code (ex: "BRCA", "LUAD")
-  use_synthetic: false  # Désactive les données synthétiques
-
-  # --- Paramètres de split ---
-  test_size: 0.2  # Taille du jeu de test
-  validation_size: 0.1  # Taille du jeu de validation (optionnel)
-
-  # --- Gestion des valeurs manquantes ---
-  missing_threshold: 0.3  # Seuil pour supprimer les colonnes avec trop de missing
-  imputation_strategy: "simple"  # Stratégie simple pour éviter les erreurs de mémoire avec 20k+ gènes
-
-  # --- Sélection des gènes (pour les données génomiques) ---
-  n_genes: 1000  # Nombre de gènes à sélectionner après prétraitement
-  gene_selection_method: "variance"  # Méthode pour sélectionner les gènes (variance, correlation, pam50)
+  target_column: "OS"
+  filter_cancer_type: null
+  use_synthetic: false
+  test_size: 0.15
+  validation_size: 0.15
+  missing_threshold: 0.2  # Plus strict
+  imputation_strategy: "simple"  # Plus stable pour les données à haute dimension (évite les erreurs mémoire)
+  n_genes: 5000  # On garde plus de gènes pour capturer des signaux subtils
+  gene_selection_method: "variance"
 
 # ============================================
-# Prétraitement
+# Prétraitement Avancé
 # ============================================
 preprocessing:
-  # --- Normalisation ---
-  scaling: "robust"  # standard, minmax, robust (pour les données cliniques)
-  genomic_scaling: "log2"  # log2, quantile, standard (pour les données génomiques)
-
-  # --- Équilibrage des classes ---
+  scaling: "robust"  # Gère les outliers cliniques
+  genomic_scaling: "log2"
   balance_classes: true
-  balance_method: "smote"  # smote, adasyn, undersample, none
-
-  # --- Sélection de features (pour les données cliniques) ---
-  feature_selection: "f_classif"  # f_classif (ANOVA) est beaucoup plus rapide que mutual_info pour les gènes
-  max_features: 50  # Nombre maximal de features cliniques à garder
+  balance_method: "smote"
+  feature_selection: "f_classif"
+  max_features: 100  # Réduit pour éviter l'overfitting et améliorer la généralisation
 
 # ============================================
-# Modèles et optimisation
+# Benchmark de 11 Modèles (Hyper-Optimisé)
 # ============================================
 models:
-  # --- Modèles à entraîner ---
   classifiers:
     - name: "logistic_regression"
       enabled: true
       params:
-        C: [0.1, 1.0, 10.0]
-        penalty: ["l2"]  # l1 peut causer des problèmes avec les données génomiques
-        solver: ["lbfgs", "saga"]
-        max_iter: [1000]
+        C: [0.01, 0.1, 1.0, 10.0]
+        penalty: ["l2"]
+        solver: ["saga"]
 
     - name: "random_forest"
       enabled: true
       params:
-        n_estimators: [100, 200]
-        max_depth: [5, 10, null]
-        min_samples_split: [2, 5]
+        n_estimators: [200, 500]
+        max_depth: [10, 20, null]
         class_weight: ["balanced"]
 
     - name: "xgboost"
       enabled: true
       params:
-        n_estimators: [100, 200]
-        max_depth: [3, 6, 9]
-        learning_rate: [0.01, 0.1, 0.2]
-        subsample: [0.8, 1.0]
-        colsample_bytree: [0.8, 1.0]
-        tree_method: ["hist"]  # Optimisé pour les données génomiques
+        n_estimators: [500, 1000]
+        max_depth: [6, 10]
+        learning_rate: [0.01, 0.05]
+        tree_method: ["hist"]
 
     - name: "lightgbm"
       enabled: true
       params:
-        n_estimators: [100, 200]
-        num_leaves: [31, 50, 100]
-        learning_rate: [0.01, 0.1]
+        n_estimators: [500, 1000]
+        num_leaves: [31, 127]
+        learning_rate: [0.01, 0.05]
         class_weight: ["balanced"]
-        boosting_type: ["gbdt"]
 
-  # --- Optimisation des hyperparamètres ---
+    - name: "extra_trees"
+      enabled: true
+      params:
+        n_estimators: [500]
+        max_depth: [20, null]
+        class_weight: ["balanced"]
+
+    - name: "catboost"
+      enabled: true
+      params:
+        iterations: [500, 1000]
+        depth: [6, 10]
+        auto_class_weights: ["Balanced"]
+
+    - name: "ada_boost"
+      enabled: true
+      params:
+        n_estimators: [200]
+        learning_rate: [0.1, 1.0]
+
+    - name: "gradient_boosting"
+      enabled: true
+      params:
+        n_estimators: [300]
+        learning_rate: [0.1]
+        max_depth: [5]
+
+    - name: "svm"
+      enabled: true
+      params:
+        C: [1.0, 10.0]
+        kernel: ["rbf"]
+        probability: [true]
+
+    - name: "knn"
+      enabled: true
+      params:
+        n_neighbors: [5, 10, 20]
+        weights: ["distance"]
+
+    - name: "mlp"
+      enabled: true
+      params:
+        hidden_layer_sizes: [[200, 100, 50], [100, 100]]
+        alpha: [0.0001, 0.001]
+        max_iter: [1000]
+
+    - name: "naive_bayes"
+      enabled: true
+
+    - name: "decision_tree"
+      enabled: true
+
+    - name: "sgd"
+      enabled: true
+
+    - name: "ridge"
+      enabled: true
+
+    - name: "qda"
+      enabled: true
+
+    - name: "bagging"
+      enabled: true
+
+    - name: "hist_gradient_boosting"
+      enabled: true
+
   hyperparameter_tuning:
-    method: "bayesian"  # grid, random, bayesian
-    n_trials: 50  # Nombre d'itérations pour l'optimisation bayésienne
-    cv_folds: 5  # Nombre de folds pour la validation croisée
-    scoring: "roc_auc"  # Métrique pour l'optimisation
+    method: "bayesian"
+    n_trials: 100  # Optimisation massive pour des résultats SOTA
+    cv_folds: 5
+    scoring: "roc_auc"
 
 # ============================================
-# Explicabilité (XAI)
+# Explicabilité SOTA
 # ============================================
 explainability:
-  # --- Méthodes globales ---
-  global_methods:
-    - "feature_importance"
-    - "permutation_importance"
-    - "partial_dependence"
-
-  # --- Méthodes locales ---
-  local_methods:
-    - "shap"
-    - "lime"
-
-  # --- Configuration SHAP ---
+  global_methods: ["feature_importance", "permutation_importance"]
+  local_methods: ["shap", "lime"]
   shap:
-    explainer_type: "tree"  # tree (pour XGBoost/LightGBM), kernel (pour les autres)
-    nsamples: 100  # Nombre d'échantillons pour KernelSHAP
-    max_display: 20  # Nombre maximal de features à afficher
-
-  # --- Configuration LIME ---
-  lime:
-    num_features: 10  # Nombre de features à expliquer localement
-    num_samples: 5000  # Nombre d'échantillons pour l'approximation locale
-    kernel_width: 3  # Largeur du kernel pour LIME
+    explainer_type: "auto"
+    nsamples: 500
+    max_display: 30
 
 # ============================================
-# Évaluation et robustesse
+# Robustesse Extrême
 # ============================================
-evaluation:
-  # --- Métriques de performance ---
-  metrics:
-    - "accuracy"
-    - "precision"
-    - "recall"
-    - "f1"
-    - "roc_auc"
-    - "average_precision"
-    - "calibration_error"
-    - "brier_score"
-
-  # --- Seuil clinique pour la classification ---
-  clinical_thresholds:
-    high_risk: 0.7
-    medium_risk: 0.3
-    low_risk: 0.1
-
-  # --- Validation clinique ---
-  clinical_validation:
-    expected_features:  # Features attendues comme importantes (pour validation)
-      - "age"
-      - "asa_score"
-      - "surgery_duration"
-      - "BRCA1"
-      - "TP53"
-
-# --- Tests de robustesse ---
 robustness:
   noise_tests:
     - type: "gaussian"
-      levels: [0.01, 0.05, 0.1]  # Niveaux de bruit gaussien
+      levels: [0.01, 0.05, 0.1, 0.15]
     - type: "missing"
-      levels: [0.05, 0.1, 0.2]  # Niveaux de données manquantes
-    - type: "outliers"
-      levels: [0.02, 0.05]  # Niveaux de valeurs aberrantes
-
-  stability_metrics:
-    - "jaccard_index"  # Stabilité des ensembles de features
-    - "spearman_correlation"  # Stabilité des rangs
-    - "top_k_consistency"  # Consistance des top-k features
-
-# ============================================
-# Chemins et sorties
-# ============================================
-paths:
-  data: "data"
-  processed_data: "data/processed"
-  models: "models/saved_models"
-  reports: "reports"
-  figures: "reports/figures"
-  logs: "logs"
+      levels: [0.05, 0.1, 0.2, 0.3]

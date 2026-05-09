@@ -7,3 +7,93 @@
 2026-04-25 15:43:17,427 - xai_clinical.data.pancan_loader - INFO - Expression PANCAN: (11069, 20531)
 2026-04-25 15:43:23,926 - xai_clinical.data.pancan_loader - INFO - Échantillons communs PANCAN+BRCA: 1097
 2026-04-25 15:43:24,195 - xai_clinical.data.pancan_loader - INFO - Données fusionnées: (1097, 20668)
+2026-04-25 16:32:04,349 - xai_clinical.data.pancan_loader - INFO - Clinical patient: (1097, 110)
+2026-04-25 16:32:04,359 - xai_clinical.data.pancan_loader - INFO - Clinical sample: (1108, 26)
+2026-04-25 16:32:04,368 - xai_clinical.data.pancan_loader - INFO - Clinical merged: (1108, 136)
+2026-04-25 16:32:04,375 - xai_clinical.data.pancan_loader - INFO - Cible survie calculée (cut-off 24m): {0: 1062, 1: 39}
+2026-04-25 16:32:04,376 - xai_clinical.data.pancan_loader - INFO - Chargement PANCAN expression: c:\Users\nidha\Desktop\xai_clinical_prediction\data\raw\pancan\EBPlusPlusAdjustPANCAN.tsv
+2026-04-25 16:32:45,777 - xai_clinical.data.pancan_loader - INFO - Filtrage BRCA: 1218 échantillons
+2026-04-25 16:32:45,832 - xai_clinical.data.pancan_loader - INFO - Application log2(x+1)
+2026-04-25 16:32:46,093 - xai_clinical.data.pancan_loader - INFO - Expression PANCAN: (1218, 20531)
+2026-04-25 16:32:46,235 - xai_clinical.data.pancan_loader - INFO - Échantillons communs PANCAN+BRCA: 1097
+2026-04-25 16:32:46,472 - xai_clinical.data.pancan_loader - INFO - Données fusionnées: (1097, 20668)
+2026-04-25 16:53:47,382 - xai_clinical.data.pancan_loader - INFO - Clinical patient: (1097, 110)
+2026-04-25 16:53:47,394 - xai_clinical.data.pancan_loader - INFO - Clinical sample: (1108, 26)
+2026-04-25 16:53:47,403 - xai_clinical.data.pancan_loader - INFO - Clinical merged: (1108, 136)
+2026-04-25 16:53:47,409 - xai_clinical.data.pancan_loader - INFO - Cible survie calculée (cut-off 24m): {0: 1062, 1: 39}
+2026-04-25 16:53:47,411 - xai_clinical.data.pancan_loader - INFO - Chargement PANCAN expression: c:\Users\nidha\Desktop\xai_clinical_prediction\data\raw\pancan\EBPlusPlusAdjustPANCAN.tsv
+2026-04-25 16:54:29,716 - xai_clinical.data.pancan_loader - INFO - Filtrage BRCA: 1218 échantillons
+2026-04-25 16:54:29,774 - xai_clinical.data.pancan_loader - INFO - Application log2(x+1)
+2026-04-25 16:54:30,023 - xai_clinical.data.pancan_loader - INFO - Expression PANCAN: (1218, 20531)
+2026-04-25 16:54:30,149 - xai_clinical.data.pancan_loader - INFO - Échantillons communs PANCAN+BRCA: 1097
+2026-04-25 16:54:30,365 - xai_clinical.data.pancan_loader - INFO - Données fusionnées: (1097, 20668)
+2026-04-25 17:14:41,913 - xai_clinical.data.pancan_loader - INFO - Clinical patient: (1097, 110)
+2026-04-25 17:14:41,923 - xai_clinical.data.pancan_loader - INFO - Clinical sample: (1108, 26)
+2026-04-25 17:14:41,931 - xai_clinical.data.pancan_loader - INFO - Clinical merged: (1108, 136)
+2026-04-25 17:14:41,949 - xai_clinical.data.pancan_loader - INFO - Cible survie calculée (cut-off 24m): {0: 1062, 1: 39}
+2026-04-25 17:21:15,797 - xai_clinical.data.pancan_loader - INFO - Clinical patient: (1097, 110)
+2026-04-25 17:21:15,807 - xai_clinical.data.pancan_loader - INFO - Clinical sample: (1108, 26)
+2026-04-25 17:21:15,814 - xai_clinical.data.pancan_loader - INFO - Clinical merged: (1108, 136)
+2026-04-25 17:21:15,832 - xai_clinical.data.pancan_loader - INFO - Cible survie calculée (cut-off 24m): {0: 1062, 1: 39}
+2026-04-25 17:21:15,842 - xai_clinical.data.pancan_loader - INFO - Chargement PANCAN expression: c:\Users\nidha\Desktop\xai_clinical_prediction\data\raw\pancan\EBPlusPlusAdjustPANCAN.tsv
+2026-04-25 17:22:00,102 - xai_clinical.data.pancan_loader - INFO - Application log2(x+1)
+2026-04-25 17:22:02,544 - xai_clinical.data.pancan_loader - INFO - Expression PANCAN: (11069, 20531)
+2026-04-25 17:22:04,487 - xai_clinical.data.pancan_loader - INFO - Échantillons communs PANCAN+BRCA: 1097
+2026-04-25 17:22:04,735 - xai_clinical.data.pancan_loader - INFO - Données fusionnées: (1097, 20668)
+2026-04-25 17:23:03,131 - matplotlib.category - INFO - Using categorical units to plot a list of strings that are all parsable as floats or dates. If these strings should be plotted as numbers, cast to the appropriate data type before plotting.
+2026-04-25 17:23:03,139 - matplotlib.category - INFO - Using categorical units to plot a list of strings that are all parsable as floats or dates. If these strings should be plotted as numbers, cast to the appropriate data type before plotting.
+2026-04-25 17:23:17,078 - matplotlib.category - INFO - Using categorical units to plot a list of strings that are all parsable as floats or dates. If these strings should be plotted as numbers, cast to the appropriate data type before plotting.
+2026-04-25 17:23:17,084 - matplotlib.category - INFO - Using categorical units to plot a list of strings that are all parsable as floats or dates. If these strings should be plotted as numbers, cast to the appropriate data type before plotting.
+2026-04-25 17:23:22,555 - xai_clinical.data.pancan_loader - INFO - Échantillons communs PANCAN+BRCA: 1097
+2026-04-25 17:23:22,780 - xai_clinical.data.pancan_loader - INFO - Données fusionnées: (1097, 20668)
+2026-04-25 17:23:29,030 - matplotlib.category - INFO - Using categorical units to plot a list of strings that are all parsable as floats or dates. If these strings should be plotted as numbers, cast to the appropriate data type before plotting.
+2026-04-25 17:23:29,036 - matplotlib.category - INFO - Using categorical units to plot a list of strings that are all parsable as floats or dates. If these strings should be plotted as numbers, cast to the appropriate data type before plotting.
+2026-04-25 19:36:38,486 - xai_clinical.data.pancan_loader - INFO - Clinical patient: (1097, 110)
+2026-04-25 19:36:38,509 - xai_clinical.data.pancan_loader - INFO - Clinical sample: (1108, 26)
+2026-04-25 19:36:38,520 - xai_clinical.data.pancan_loader - INFO - Clinical merged: (1108, 136)
+2026-04-25 19:36:38,544 - xai_clinical.data.pancan_loader - INFO - Cible survie calculée (cut-off 24m): {0: 1062, 1: 39}
+2026-04-25 19:36:38,554 - xai_clinical.data.pancan_loader - INFO - Chargement PANCAN expression: c:\Users\nidha\Desktop\xai_clinical_prediction\data\raw\pancan\EBPlusPlusAdjustPANCAN.tsv
+2026-04-25 19:37:23,449 - xai_clinical.data.pancan_loader - INFO - Application log2(x+1)
+2026-04-25 19:37:25,927 - xai_clinical.data.pancan_loader - INFO - Expression PANCAN: (11069, 20531)
+2026-04-25 19:37:27,915 - xai_clinical.data.pancan_loader - INFO - Échantillons communs PANCAN+BRCA: 1097
+2026-04-25 19:37:28,179 - xai_clinical.data.pancan_loader - INFO - Données fusionnées: (1097, 20668)
+2026-04-25 19:37:28,353 - matplotlib.category - INFO - Using categorical units to plot a list of strings that are all parsable as floats or dates. If these strings should be plotted as numbers, cast to the appropriate data type before plotting.
+2026-04-25 19:37:28,366 - matplotlib.category - INFO - Using categorical units to plot a list of strings that are all parsable as floats or dates. If these strings should be plotted as numbers, cast to the appropriate data type before plotting.
+2026-04-26 18:14:56,391 - xai_clinical.data.pancan_loader - INFO - Clinical patient: (1097, 110)
+2026-04-26 18:14:56,409 - xai_clinical.data.pancan_loader - INFO - Clinical sample: (1108, 26)
+2026-04-26 18:14:56,427 - xai_clinical.data.pancan_loader - INFO - Clinical merged: (1108, 136)
+2026-04-26 18:14:56,465 - xai_clinical.data.pancan_loader - INFO - Cible survie calculée (cut-off 24m): {0: 1062, 1: 39}
+2026-04-26 18:14:56,481 - xai_clinical.data.pancan_loader - INFO - Chargement PANCAN expression: c:\Users\nidha\Desktop\xai_clinical_prediction\data\raw\pancan\EBPlusPlusAdjustPANCAN.tsv
+2026-04-26 18:16:25,347 - xai_clinical.data.pancan_loader - INFO - Sélection des 5000 gènes les plus variables...
+2026-04-26 18:23:05,197 - xai_clinical.data.pancan_loader - INFO - Clinical patient: (1097, 110)
+2026-04-26 18:23:05,209 - xai_clinical.data.pancan_loader - INFO - Clinical sample: (1108, 26)
+2026-04-26 18:23:05,419 - xai_clinical.data.pancan_loader - INFO - Clinical merged: (1108, 136)
+2026-04-26 18:23:05,438 - xai_clinical.data.pancan_loader - INFO - Cible survie calculée (cut-off 24m): {0: 1062, 1: 39}
+2026-04-26 18:23:05,450 - xai_clinical.data.pancan_loader - INFO - Chargement PANCAN expression: c:\Users\nidha\Desktop\xai_clinical_prediction\data\raw\pancan\EBPlusPlusAdjustPANCAN.tsv
+2026-04-26 18:23:25,101 - xai_clinical.data.pancan_loader - INFO - Clinical patient: (1097, 110)
+2026-04-26 18:23:25,111 - xai_clinical.data.pancan_loader - INFO - Clinical sample: (1108, 26)
+2026-04-26 18:23:25,124 - xai_clinical.data.pancan_loader - INFO - Clinical merged: (1108, 136)
+2026-04-26 18:23:25,132 - xai_clinical.data.pancan_loader - INFO - Cible survie calculée (cut-off 24m): {0: 1062, 1: 39}
+2026-04-26 18:23:25,134 - xai_clinical.data.pancan_loader - INFO - Chargement PANCAN expression: c:\Users\nidha\Desktop\xai_clinical_prediction\data\raw\pancan\EBPlusPlusAdjustPANCAN.tsv
+2026-04-26 18:48:37,912 - xai_clinical.data.pancan_loader - INFO - Clinical patient: (1097, 110)
+2026-04-26 18:48:37,932 - xai_clinical.data.pancan_loader - INFO - Clinical sample: (1108, 26)
+2026-04-26 18:48:37,945 - xai_clinical.data.pancan_loader - INFO - Clinical merged: (1108, 136)
+2026-04-26 18:48:37,973 - xai_clinical.data.pancan_loader - INFO - Cible survie calculée (cut-off 24m): {0: 1062, 1: 39}
+2026-04-26 18:48:37,983 - xai_clinical.data.pancan_loader - INFO - Chargement PANCAN expression: c:\Users\nidha\Desktop\xai_clinical_prediction\data\raw\pancan\EBPlusPlusAdjustPANCAN.tsv
+2026-04-26 18:49:20,038 - xai_clinical.data.pancan_loader - INFO - Sélection des 5000 gènes les plus variables...
+2026-04-26 18:49:26,410 - xai_clinical.data.pancan_loader - INFO - Application log2(x+1)
+2026-04-26 18:49:27,009 - xai_clinical.data.pancan_loader - INFO - Expression PANCAN finale: (11069, 5000)
+2026-04-26 18:49:27,459 - xai_clinical.data.pancan_loader - INFO - Échantillons communs PANCAN+BRCA: 1097
+2026-04-26 18:49:27,538 - xai_clinical.data.pancan_loader - INFO - Données fusionnées: (1097, 5137)
+2026-04-26 18:49:27,649 - matplotlib.category - INFO - Using categorical units to plot a list of strings that are all parsable as floats or dates. If these strings should be plotted as numbers, cast to the appropriate data type before plotting.
+2026-04-26 18:49:27,662 - matplotlib.category - INFO - Using categorical units to plot a list of strings that are all parsable as floats or dates. If these strings should be plotted as numbers, cast to the appropriate data type before plotting.
+2026-04-29 22:57:11,452 - xai_clinical.data.pancan_loader - INFO - Clinical patient: (1097, 110)
+2026-04-29 22:57:11,476 - xai_clinical.data.pancan_loader - INFO - Clinical sample: (1108, 26)
+2026-04-29 22:57:11,490 - xai_clinical.data.pancan_loader - INFO - Clinical merged: (1108, 136)
+2026-04-29 22:57:11,517 - xai_clinical.data.pancan_loader - INFO - Cible survie calculée (cut-off 24m): {0: 1062, 1: 39}
+2026-04-29 22:57:11,528 - xai_clinical.data.pancan_loader - INFO - Chargement PANCAN expression: c:\Users\nidha\Desktop\xai_clinical_prediction\data\raw\pancan\EBPlusPlusAdjustPANCAN.tsv
+2026-04-29 22:57:30,652 - xai_clinical.data.pancan_loader - INFO - Clinical patient: (1097, 110)
+2026-04-29 22:57:30,662 - xai_clinical.data.pancan_loader - INFO - Clinical sample: (1108, 26)
+2026-04-29 22:57:30,672 - xai_clinical.data.pancan_loader - INFO - Clinical merged: (1108, 136)
+2026-04-29 22:57:30,678 - xai_clinical.data.pancan_loader - INFO - Cible survie calculée (cut-off 24m): {0: 1062, 1: 39}
+2026-04-29 22:57:30,681 - xai_clinical.data.pancan_loader - INFO - Chargement PANCAN expression: c:\Users\nidha\Desktop\xai_clinical_prediction\data\raw\pancan\EBPlusPlusAdjustPANCAN.tsv

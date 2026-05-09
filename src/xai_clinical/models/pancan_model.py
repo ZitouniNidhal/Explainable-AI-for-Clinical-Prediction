@@ -37,28 +37,12 @@ class XAIPancanModel:
         self.y_test = None
         
     def _build_model(self) -> Any:
-        """Construit le modèle selon le type spécifié."""
-        if self.model_type == "random_forest":
-            return RandomForestClassifier(
-                n_estimators=200, max_depth=10, min_samples_split=5,
-                min_samples_leaf=2, class_weight='balanced',
-                random_state=self.random_state, n_jobs=-1
-            )
-        elif self.model_type == "gradient_boosting":
-            return GradientBoostingClassifier(
-                n_estimators=200, max_depth=5, learning_rate=0.1,
-                random_state=self.random_state
-            )
-        elif self.model_type == "logistic_regression":
-            return LogisticRegression(
-                max_iter=1000, class_weight='balanced',
-                random_state=self.random_state, n_jobs=-1
-            )
-        elif self.model_type == "svm":
-            return SVC(kernel='rbf', probability=True, class_weight='balanced',
-                      random_state=self.random_state)
-        else:
-            raise ValueError(f"Type de modèle inconnu: {self.model_type}")
+        """Construit le modèle selon le type spécifié en utilisant la factory."""
+        from xai_clinical.models.classifiers import ClassifierFactory
+        
+        # Mapping for naming consistency if needed, but we can use direct names
+        return ClassifierFactory.create_classifier(self.model_type, random_state=self.random_state)
+
     
     def prepare_data(self, X: pd.DataFrame, y: pd.Series, test_size: float = 0.2, scale: bool = True):
         """Prépare les données: split train/test et scaling."""
@@ -114,10 +98,12 @@ class XAIPancanModel:
         
         background = shap.sample(self.X_train, background_samples)
         
-        if self.model_type in ["random_forest", "gradient_boosting"]:
+        if self.model_type in ["random_forest", "gradient_boosting", "xgboost", "lightgbm", "catboost", "extra_trees", "ada_boost"]:
             self.shap_explainer = shap.TreeExplainer(self.model)
         else:
             self.shap_explainer = shap.KernelExplainer(self.model.predict_proba, background)
+
+
         
         X_test_sample = self.X_test.iloc[:test_samples]
         self.shap_values = self.shap_explainer.shap_values(X_test_sample)

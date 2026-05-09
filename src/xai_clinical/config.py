@@ -31,14 +31,17 @@ class DataConfig(BaseModel):
     validation_size: float = 0.1
     missing_threshold: float = 0.3
     imputation_strategy: str = "iterative"
+    n_genes: int = 2000
+    gene_selection_method: str = "variance"
 
 
 class PreprocessingConfig(BaseModel):
     scaling: str = "robust"
+    genomic_scaling: str = "log2"
     balance_classes: bool = True
     balance_method: str = "smote"
-    feature_selection: str = "mutual_info"
-    max_features: int = 50
+    feature_selection: str = "f_classif"
+    max_features: int = 200
 
 
 class ModelConfig(BaseModel):

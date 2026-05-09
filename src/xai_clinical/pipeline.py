@@ -14,6 +14,7 @@ from pathlib import Path
 import logging
 from datetime import datetime
 import json
+import joblib
 
 from .config import ConfigLoader
 from .data.synthetic_generator import SyntheticDataGenerator
@@ -116,16 +117,18 @@ class ClinicalPipeline:
         
         try:
             # 2. Charger les expressions (PANCAN)
-            logger.info("  - Loading PANCAN gene expression...")
-            pancan_expr = self.pancan_loader.load_gene_expression()
+            logger.info(f"  - Loading PANCAN gene expression (Top {self.config.data.n_genes})...")
+            pancan_expr = self.pancan_loader.load_gene_expression(top_genes=self.config.data.n_genes)
+
             
             # 3. Charger les données cliniques (BRCA Local)
             logger.info("  - Loading clinical data...")
             clinical = self.brca_loader.get_merged_clinical()
             
-            # 4. Construire la cible de survie
-            logger.info("  - Building survival target (24 months cutoff)...")
-            target = self.brca_loader.extract_survival_target(clinical, cutoff_months=24)
+            # 4. Construire la cible de survie REELLE (OS_STATUS)
+            # On utilise un cutoff de 36 mois pour un équilibre SOTA
+            logger.info("  - Building REAL survival target (36 months cutoff)...")
+            target = self.brca_loader.extract_survival_target(clinical, cutoff_months=36)
             
             # 5. Fusionner et Aligner
             logger.info("  - Fusing and aligning modalities...")
@@ -136,8 +139,15 @@ class ClinicalPipeline:
                 logger.error("Fusion result is empty! Falling back to synthetic data.")
                 return self._create_synthetic_data()
             
-            # 6. Préparer pour le ML
+            # 6. Préparer pour le ML (On retire les colonnes cliniques qui causent du leakage)
             self.X, self.y = fusion.prepare_ml_features(self.fused_df)
+            
+            # SUPPRESSION DU LEAKAGE: On retire les colonnes de survie si elles sont dans X
+            leakage_cols = [c for c in self.X.columns if 'STATUS' in c or 'MONTHS' in c or 'SURVIVAL' in c]
+            if leakage_cols:
+                logger.warning(f"Removing leakage columns: {leakage_cols}")
+                self.X = self.X.drop(columns=leakage_cols)
+
             self.data = self.X
             self.target = self.y
             
@@ -145,9 +155,11 @@ class ClinicalPipeline:
             return self.X, self.y
             
         except Exception as e:
-            logger.error(f"Error during data loading: {e}")
-            logger.info("Falling back to synthetic data...")
-            return self._create_synthetic_data()
+            logger.error(f"CRITICAL ERROR during data loading: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            raise e # On ne bascule plus silencieusement
+
     # src/xai_clinical/pipeline.py - REMPLACE _create_target()
 
     def _create_target(self, clinical_df):
@@ -248,16 +260,17 @@ class ClinicalPipeline:
         logger.warning("Using SYNTHETIC data for testing!")
         from sklearn.datasets import make_classification
 
+        n_features = getattr(self.config.preprocessing, 'max_features', 20)
         X, y = make_classification(
             n_samples=500,
-            n_features=20,
-            n_informative=10,
-            n_redundant=5,
+            n_features=n_features,
+            n_informative=min(10, n_features),
+            n_redundant=min(5, n_features - 10) if n_features > 10 else 0,
             n_classes=2,
             random_state=42,
         )
 
-        self.X = pd.DataFrame(X, columns=[f"feature_{i}" for i in range(X.shape[1])])
+        self.X = pd.DataFrame(X, columns=[f"Synthetic_Gene_{i}" for i in range(X.shape[1])])
         self.y = pd.Series(y, name="target")
         self.data = self.X
         self.target = self.y
@@ -309,27 +322,51 @@ class ClinicalPipeline:
         self.y_test = y_test
 
         # Save preprocessor
-        import joblib
-
         joblib.dump(
             self.preprocessor, self.config.get_path("models") / "preprocessor.joblib"
         )
+
+        # Save processed data for App and Notebooks
+        processed_data = {
+            "X_train": self.X_train,
+            "y_train": self.y_train,
+            "X_val": self.X_val,
+            "y_val": self.y_val,
+            "X_test": self.X_test,
+            "y_test": self.y_test,
+            "feature_names": self.preprocessor.selected_features or self.preprocessor.feature_names
+        }
+        processed_path = self.config.get_path("processed_data") / "processed_data_v2.pkl"
+        joblib.dump(processed_data, processed_path)
+        logger.info(f"Processed data saved to {processed_path}")
+
+
 
     def _train_models(self):
         """Train and optimize models"""
         logger.info("\n[TRAINING] MODEL TRAINING")
 
         self.trainer = ModelTrainer(self.config, self.config.project.random_state)
+        
+        # Log feature names to verify preservation
+        feat_preview = self.X_train.columns.tolist()[:5]
+        logger.info(f"Training on {len(self.X_train.columns)} features. Preview: {feat_preview}")
+        
         self.trainer.train_all_models(
             self.X_train, self.y_train, self.X_val, self.y_val
         )
 
-        # Select best model
-        self.best_model_name, self.best_model, best_score = self.trainer.get_best_model(
-            "val_roc_auc"
-        )
 
-        logger.info(f"\nBest model: {self.best_model_name} (AUC-ROC: {best_score:.3f})")
+        # Create SOTA Ensemble for record performance
+        logger.info("\n[TRAINING] CREATING SOTA ENSEMBLE")
+        self.best_model = self.trainer.create_sota_ensemble(self.X_train, self.y_train)
+        self.best_model_name = "SOTA_Voting_Ensemble"
+        
+        # Test set evaluation
+        from sklearn.metrics import roc_auc_score
+        y_test_proba = self.best_model.predict_proba(self.X_test)[:, 1]
+        test_auc = roc_auc_score(self.y_test, y_test_proba)
+        logger.info(f"Ensemble Test AUC: {test_auc:.4f}")
 
         # Test set evaluation
         from sklearn.metrics import classification_report, roc_auc_score
@@ -351,7 +388,12 @@ class ClinicalPipeline:
         logger.info(f"Specificity: {metrics['specificity']:.3f}")
 
         # Save models
-        self.trainer.save_models(self.config.get_path("models") / "saved_models")
+        save_path = self.config.get_path("models") / "saved_models"
+        self.trainer.save_models(save_path)
+        
+        # Save a copy of the best model for the app
+        joblib.dump(self.best_model, save_path / "best_model.joblib")
+        logger.info(f"Best model saved as 'best_model.joblib'")
     def _explain_model(self):
         """Generate SHAP and LIME explanations"""
         logger.info("\n[EXPLAINABILITY] EXPLAINABILITY")

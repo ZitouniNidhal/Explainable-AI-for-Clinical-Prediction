@@ -63,8 +63,13 @@ class SHAPExplainer:
             elif self.explainer_type == "kernel":
                 # Sample for faster kernel explainer
                 background_sample = shap.sample(X_background, 100)
+                
+                # FIX: Avoid PicklingError with bound methods in multiprocessing
+                def predict_fn(x):
+                    return self.model.predict_proba(x)
+                
                 self.explainer = shap.KernelExplainer(
-                    self.model.predict_proba, background_sample
+                    predict_fn, background_sample
                 )
             else:
                 raise ValueError(f"Unsupported explainer type: {self.explainer_type}")
