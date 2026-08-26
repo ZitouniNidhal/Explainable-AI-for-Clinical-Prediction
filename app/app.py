@@ -528,11 +528,14 @@ def show_explanation_page(model, data):
         X_subset = data['X_test'].head(50)
         import shap
         # Use n_jobs=1 to avoid PicklingError with complex ensembles in Streamlit
+        # Use safe nsamples to avoid IndexError with KernelExplainer
+        kwargs = {"nsamples": 100} if explainer.explainer_type == "kernel" else {}
+        
         try:
-            shap_values = explainer.explainer.shap_values(X_subset.values, n_jobs=1)
-        except Exception:
-            # Fallback if n_jobs is not supported or fails
-            shap_values = explainer.explainer.shap_values(X_subset.values)
+            shap_values = explainer.explainer.shap_values(X_subset.values, **kwargs)
+        except Exception as e:
+            st.error(f"Error calculating SHAP: {e}")
+            shap_values = None
             
         if isinstance(shap_values, list): shap_values = shap_values[1]
         plt.figure(figsize=(12, 8))

@@ -55,7 +55,7 @@ class ClassifierFactory:
 
     @staticmethod
     def create_classifier(
-        name: str, params: Dict[str, Any] = None, random_state: int = 42
+        name: str, params: Dict[str, Any] = None, random_state: int = 42, pos_label_weight: float = 1.0
     ):
         """
         Create a classifier with specified parameters
@@ -66,6 +66,7 @@ class ClassifierFactory:
                   'svm', 'extra_trees', 'catboost'
             params: Hyperparameter dictionary (overrides defaults)
             random_state: Random seed
+            pos_label_weight: Weight for positive class (ratio of negative/positive)
         """
         params = params or {}
 
@@ -92,12 +93,18 @@ class ClassifierFactory:
                 "random_state": random_state,
                 "eval_metric": "logloss",
                 "use_label_encoder": False,
+                "scale_pos_weight": pos_label_weight, 
             }
             default_params.update(params)
             return xgb.XGBClassifier(**default_params)
 
         elif name == "lightgbm":
-            default_params = {"random_state": random_state, "n_jobs": -1, "verbose": -1}
+            default_params = {
+                "random_state": random_state, 
+                "n_jobs": -1, 
+                "verbose": -1,
+                "scale_pos_weight": pos_label_weight
+            }
             default_params.update(params)
             return LGBMClassifier(**default_params)
 
@@ -128,11 +135,9 @@ class ClassifierFactory:
             default_params = {
                 "random_seed": random_state,
                 "verbose": 0,
-                "auto_class_weights": "Balanced",   # handles imbalanced classes
+                "scale_pos_weight": pos_label_weight, 
                 "eval_metric": "AUC",
-                "thread_count": -1,                 # use all CPU cores
-                # "task_type": "GPU",               # UNCOMMENT THIS LINE if you have an NVIDIA GPU
-                # "border_count": 128,              # Uncomment to speed up CPU training (default is 254)
+                "thread_count": -1,                 
             }
             default_params.update(params)
             return CatBoostClassifier(**default_params)

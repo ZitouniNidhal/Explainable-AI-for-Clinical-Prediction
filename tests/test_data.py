@@ -8,7 +8,6 @@ import pandas as pd
 import numpy as np
 from src.xai_clinical.data.synthetic_generator import SyntheticDataGenerator
 from src.xai_clinical.data.preprocessor import DataPreprocessor
-from src.xai_clinical.config import Config
 
 
 class TestSyntheticDataGenerator:

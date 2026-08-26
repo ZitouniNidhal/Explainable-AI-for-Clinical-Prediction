@@ -38,9 +38,26 @@ data:
   test_size: 0.15
   validation_size: 0.15
   missing_threshold: 0.2  # Plus strict
-  imputation_strategy: "simple"  # Plus stable pour les données à haute dimension (évite les erreurs mémoire)
-  n_genes: 5000  # On garde plus de gènes pour capturer des signaux subtils
+  imputation_strategy: "knn"
+  knn_imputer_k: 5
+  knn_sensitivity_range: [3, 5, 10, 20]
+  n_genes: 5000
   gene_selection_method: "variance"
+
+# ============================================
+# Configuration de la Fusion Multi-Omique
+# ============================================
+fusion:
+  strategy: "intermediate"
+  reduction_method: "pca" # Options: pca, umap, autoencoder
+  n_components: 100
+  umap_neighbors: 15
+  umap_min_dist: 0.1
+  # Pondération des modalités (pour éviter l'écrasement)
+  weights:
+    expression: 0.5
+    clinical: 0.3
+    cnv: 0.2
 
 # ============================================
 # Prétraitement Avancé
@@ -48,10 +65,10 @@ data:
 preprocessing:
   scaling: "robust"  # Gère les outliers cliniques
   genomic_scaling: "log2"
-  balance_classes: true
+  balance_classes: false
   balance_method: "smote"
   feature_selection: "f_classif"
-  max_features: 100  # Réduit pour éviter l'overfitting et améliorer la généralisation
+  max_features: 150  # Augmenté pour capturer plus de signal clinique et génomique
 
 # ============================================
 # Benchmark de 11 Modèles (Hyper-Optimisé)
@@ -68,16 +85,17 @@ models:
     - name: "random_forest"
       enabled: true
       params:
-        n_estimators: [200, 500]
-        max_depth: [10, 20, null]
+        n_estimators: [100, 300]
+        max_depth: [5, 8, 12]  # Bridé pour éviter la mémorisation
         class_weight: ["balanced"]
+        min_samples_leaf: [5, 10]
 
     - name: "xgboost"
       enabled: true
       params:
-        n_estimators: [500, 1000]
-        max_depth: [6, 10]
-        learning_rate: [0.01, 0.05]
+        n_estimators: [100, 200]
+        max_depth: [3, 5, 7]
+        learning_rate: [0.001, 0.01, 0.05]
         tree_method: ["hist"]
 
     - name: "lightgbm"

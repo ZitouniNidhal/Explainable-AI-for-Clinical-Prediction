@@ -1,12 +1,20 @@
-
-
 import pandas as pd
 import numpy as np
 import logging
+from sklearn.feature_selection import SelectKBest, f_classif
 from typing import Dict, Tuple, Optional, List
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
+
+# Import local — importé ici pour éviter les imports circulaires
+try:
+    from .temporal_features import add_temporal_features
+    from .clinical_features import add_granular_features
+    _EXTENDED_FEATURES_AVAILABLE = True
+except ImportError:
+    _EXTENDED_FEATURES_AVAILABLE = False
+    logger.warning("Modules de features étendues non disponibles")
 
 
 class PANCANLoader:
@@ -346,13 +354,19 @@ class BRCALoader:
             event_binary = event.str.contains('DECEASED|Dead|1|Progressed|Recurred', 
                                              case=False, na=False).astype(int)
             
-            # 2. Créer la cible temporaire
-            temp_target = ((event_binary == 1) & (time <= cutoff_months)).astype(int)
+            # 2. Cible Réelle Clinique (Gestion stricte de la censure)
+            # Classe 1: Décès (ou événement) survenu AVANT ou À 60 mois
+            # Classe 0: Suivi SANS événement pendant PLUS de 60 mois
+            # NaN: Censure ambigüe (patient en vie mais suivi < 60 mois) -> exclus de l'étude binaire
             
-            # 3. Dédoublonner par patient : si un échantillon est 1, le patient est 1
-            target = temp_target.groupby(level=0).max()
+            target = pd.Series(np.nan, index=clinical_df.index)
+            target.loc[time > cutoff_months] = 0
+            target.loc[(event_binary == 1) & (time <= cutoff_months)] = 1
             
-            logger.info(f"Cible survie calculée (cut-off {cutoff_months}m): {target.value_counts().to_dict()}")
+            # 3. Dédoublonner par patient
+            target = target.groupby(level=0).max().dropna()
+            
+            logger.info(f"Cible survie RÉELLE (cut-off {cutoff_months}m): {target.value_counts().to_dict()}")
             return target
         else:
             logger.warning("Colonnes de survie non trouvées")
@@ -388,37 +402,58 @@ class PANCANBRCAFusion:
     def fuse_expression_clinical(self,
                                   pancan_expression: pd.DataFrame,
                                   brca_clinical: pd.DataFrame,
-                                  target: Optional[pd.Series] = None) -> pd.DataFrame:
-        """Fusionne l'expression PANCAN avec les données cliniques BRCA."""
+                                  target: Optional[pd.Series] = None,
+                                  add_temporal: bool = True) -> pd.DataFrame:
+        """
+        Fusionne l'expression PANCAN avec les données cliniques BRCA.
+
+        Parameters
+        ----------
+        add_temporal : bool
+            Si True, ajoute les features temporelles (ordre des événements
+            médicaux) via TemporalEventEncoder. Ces features capturent :
+            - La rapidité de la récidive (précoce vs tardive)
+            - L'ordre des traitements (néo-adjuvant vs adjuvant)
+            - Le type de chirurgie initiale
+            - Les changements de phénotype moléculaire (ex : ER+ → ER-)
+        """
         pan_expr = self.standardize_ids(pancan_expression)
         brca_clin = self.standardize_ids(brca_clinical)
-        
+
+        # --- Ajout des features Étendues (Temporelles + Granulaires) ---
+        if add_temporal and _EXTENDED_FEATURES_AVAILABLE:
+            logger.info("[Features] Extraction des détails temporels et granulaires...")
+            brca_clin = add_temporal_features(brca_clin)
+            brca_clin = add_granular_features(brca_clin)
+            logger.info(f"[Features] Total colonnes après extension: {len(brca_clin.columns)}")
+        elif add_temporal and not _EXTENDED_FEATURES_AVAILABLE:
+            logger.warning("[Features] Modules non disponibles, fusion standard")
+
         common = pan_expr.index.intersection(brca_clin.index)
         logger.info(f"Échantillons communs PANCAN+BRCA: {len(common)}")
-        
+
         if len(common) == 0:
             logger.error("Aucun échantillon commun trouvé!")
             return pd.DataFrame()
-        
+
         fused = pan_expr.loc[common].merge(
             brca_clin.loc[common],
             left_index=True,
             right_index=True,
             how='inner'
         )
-        
+
         if target is not None:
-            # Standardiser aussi les IDs de la cible
             target_std = target.copy()
             target_std.index = target_std.index.astype(str).str[:12].str.upper()
-            target_std = target_std.groupby(level=0).max() # Un seul label par patient
-            
+            target_std = target_std.groupby(level=0).max()
+
             common_target = target_std.index.intersection(fused.index)
             fused = fused.loc[common_target].copy()
             fused['TARGET'] = target_std.loc[common_target]
-        
+
         self.fused_data = fused
-        logger.info(f"Données fusionnées: {fused.shape}")
+        logger.info(f"Données fusionnées (avec temporel): {fused.shape}")
         return fused
     
     def prepare_ml_features(self,
@@ -431,6 +466,24 @@ class PANCANBRCAFusion:
         else:
             y = fused_data.iloc[:, -1]
             X = fused_data.iloc[:, :-1]
+        
+        # --- Nettoyage Impitoyable des Fuites (Leakage) ---
+        # On supprime tout ce qui ressemble de près ou de loin à une information de suivi temporel
+        bad_keywords = ['STATUS', 'MONTH', 'SURVIVAL', 'DEATH', 'DAYS', 'TIME', 'DFS', 'OS', 'PFS', 'DSS', 'VITAL', 'CONTACT', 'FOLLOWUP', 'NEOPLASM']
+        
+        leaks_found = []
+        for c in X.columns:
+            c_upper = c.upper()
+            if any(k in c_upper for k in bad_keywords):
+                # Exception : on garde l'âge
+                if 'AGE' not in c_upper:
+                    leaks_found.append(c)
+        
+        X = X.drop(columns=leaks_found)
+        
+        logger.info(f"[Sanitization] {len(leaks_found)} colonnes suspectes supprimées (Leakage Protection).")
+        logger.info(f"Colonnes supprimées : {leaks_found[:10]}...")
+        logger.info(f"Final Feature Space: {X.shape[1]} features")
         
         X = X.select_dtypes(include=[np.number])
         X = X.fillna(X.median())

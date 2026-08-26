@@ -1,0 +1,36 @@
+{
+  "original_prediction": "HAUT RISQUE",
+  "target_prediction": "BAS RISQUE",
+  "required_changes": [
+    {
+      "feature": "AMTN|401138",
+      "from": 1.4235283918581747,
+      "to": 0.0,
+      "impact": "Direction vers classe cible"
+    },
+    {
+      "feature": "PREX1|57580",
+      "from": -0.45380586339631834,
+      "to": 0.5873245690641828,
+      "impact": "Direction vers classe cible"
+    },
+    {
+      "feature": "t_stage_numeric",
+      "from": 0.0,
+      "to": -1.0,
+      "impact": "Direction vers classe cible"
+    },
+    {
+      "feature": "ALOX15B|247",
+      "from": -0.6397519247599245,
+      "to": 0.3526696397492343,
+      "impact": "Direction vers classe cible"
+    },
+    {
+      "feature": "EIF3B|8662",
+      "from": -0.5020858497665747,
+      "to": 0.4861179631262711,
+      "impact": "Direction vers classe cible"
+    }
+  ]
+}

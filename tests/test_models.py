@@ -56,13 +56,12 @@ class TestModelTrainer:
                         {"name": "logistic_regression", "enabled": True, "params": {}}
                     ]
 
-                    class HyperparameterTuning:
-                        method = "grid"
-                        n_trials = 2
-                        cv_folds = 2
-                        scoring = "accuracy"
-
-                    hyperparameter_tuning = HyperparameterTuning()
+                    hyperparameter_tuning = {
+                        "method": "grid",
+                        "n_trials": 2,
+                        "cv_folds": 2,
+                        "scoring": "accuracy"
+                    }
 
                 self.models = Models()
 

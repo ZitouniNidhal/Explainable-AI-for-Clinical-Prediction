@@ -43,6 +43,11 @@ class ModelTrainer:
         Train all configured models with optimization
         """
         classifiers_config = self.config.models.classifiers
+        
+        # Calculate dynamic class weight ratio (Negatives / Positives)
+        counts = y_train.value_counts()
+        self.pos_label_weight = float(counts.get(0, 1) / counts.get(1, 1))
+        logger.info(f"Calculated dynamic pos_label_weight: {self.pos_label_weight:.2f}")
 
         for clf_config in classifiers_config:
             if not clf_config.get("enabled", True):
@@ -60,7 +65,7 @@ class ModelTrainer:
 
             # Final training with best parameters
             model = ClassifierFactory.create_classifier(
-                name, best_params, self.random_state
+                name, best_params, self.random_state, pos_label_weight=self.pos_label_weight
             )
             try:
                 model.fit(X_train, y_train)
@@ -120,7 +125,7 @@ class ModelTrainer:
 
                 # Create and evaluate model
                 model = ClassifierFactory.create_classifier(
-                    name, params, self.random_state
+                    name, params, self.random_state, pos_label_weight=self.pos_label_weight
                 )
 
                 cv = StratifiedKFold(
@@ -149,7 +154,7 @@ class ModelTrainer:
             from sklearn.model_selection import GridSearchCV
 
             model = ClassifierFactory.create_classifier(
-                name, random_state=self.random_state
+                name, random_state=self.random_state, pos_label_weight=self.pos_label_weight
             )
             grid = GridSearchCV(
                 model, param_grid, cv=cv_folds, scoring=scoring, n_jobs=-1
@@ -161,7 +166,7 @@ class ModelTrainer:
             from sklearn.model_selection import RandomizedSearchCV
 
             model = ClassifierFactory.create_classifier(
-                name, random_state=self.random_state
+                name, random_state=self.random_state, pos_label_weight=self.pos_label_weight
             )
             search = RandomizedSearchCV(
                 model,
@@ -177,6 +182,26 @@ class ModelTrainer:
 
         else:
             raise ValueError(f"Unknown optimization method: {method}")
+
+    def calibrate_best_model(self, X_val, y_val):
+        """
+        Calibrate probabilities of the best model using Isotonic Regression or Platt Scaling.
+        Critical for clinical risk prediction.
+        """
+        from sklearn.calibration import CalibratedClassifierCV
+        
+        best_name, best_model, _ = self.get_best_model()
+        logger.info(f"\n[CALIBRATION] Calibrating probabilities for {best_name}...")
+        
+        calibrated_model = CalibratedClassifierCV(
+            best_model,
+            method='isotonic',
+            cv='prefit'
+        )
+        calibrated_model.fit(X_val, y_val)
+        
+        logger.info("Calibration complete.")
+        return calibrated_model
     def create_sota_ensemble(self, X_train, y_train):
         """
         Creates a soft-voting ensemble from the best trained models.

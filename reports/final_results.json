@@ -1,1 +1,1 @@
-{"model":"LightGBM","metrics":{"auc_roc":0.9903133903,"accuracy":0.9696969697,"sensitivity":0.8,"specificity":0.9914529915,"ppv":0.9230769231,"npv":0.974789916,"f1":0.8571428571,"precision":0.9230769231,"recall":0.8},"robustness_noise_10":0.9811965812,"robustness_missing_20":0.9378917379}
+{"model":"LIGHTGBM","metrics":{"auc_roc":0.7242063492,"accuracy":0.76,"sensitivity":0.4285714286,"specificity":0.8888888889,"ppv":0.6,"npv":0.8,"f1":0.5,"precision":0.6,"recall":0.4285714286},"robustness_noise_10":0.7222222222,"robustness_missing_20":0.6865079365}

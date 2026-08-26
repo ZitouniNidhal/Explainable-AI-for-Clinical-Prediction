@@ -64,9 +64,10 @@ class SHAPExplainer:
                 # Sample for faster kernel explainer
                 background_sample = shap.sample(X_background, 100)
                 
-                # FIX: Avoid PicklingError with bound methods in multiprocessing
+                # FIX: Ensure pure numpy output and fixed shape
                 def predict_fn(x):
-                    return self.model.predict_proba(x)
+                    # Convert to numpy and ensure 2D
+                    return np.array(self.model.predict_proba(x))
                 
                 self.explainer = shap.KernelExplainer(
                     predict_fn, background_sample
@@ -119,8 +120,14 @@ class SHAPExplainer:
         Returns:
             DataFrame with mean feature importance
         """
+        # Use a safe number of samples for KernelExplainer
+        kwargs = {}
+        if self.explainer_type == "kernel":
+            kwargs["nsamples"] = 100 # Fast and safe
+            
         shap_values = self.explainer.shap_values(
-            X.values if isinstance(X, pd.DataFrame) else X
+            X.values if isinstance(X, pd.DataFrame) else X,
+            **kwargs
         )
 
         # Handle different SHAP output formats (List, Explanation object, Multi-class array)
@@ -155,7 +162,12 @@ class SHAPExplainer:
     def _get_1d_shap_values(self, X_input) -> np.ndarray:
         """Helper to get 1D SHAP values for a single instance or mean across instances."""
         # Force conversion to array if it's an Explanation object
-        shap_out = self.explainer.shap_values(X_input)
+        # Use a safe number of samples for KernelExplainer
+        kwargs = {}
+        if self.explainer_type == "kernel":
+            kwargs["nsamples"] = 100
+            
+        shap_out = self.explainer.shap_values(X_input, **kwargs)
         
         # Handle different SHAP output formats
         if isinstance(shap_out, list):

@@ -96,7 +96,8 @@ class DataPreprocessor:
         elif strategy == "iterative":
             self.imputer = IterativeImputer(random_state=42, max_iter=10)
         elif strategy == "knn":
-            self.imputer = KNNImputer(n_neighbors=5)
+            k = getattr(self.config.data, 'knn_imputer_k', 5)
+            self.imputer = KNNImputer(n_neighbors=k)
         else:
             raise ValueError(f"Unknown imputation strategy: {strategy}")
 
@@ -196,6 +197,51 @@ class DataPreprocessor:
             ).sort_values("score", ascending=False)
             return importance
         return None
+
+    def run_knn_sensitivity_analysis(self, X: pd.DataFrame, y: pd.Series, k_values: List[int] = None) -> pd.DataFrame:
+        """
+        Analyse de sensibilité : Comment le choix de k impacte l'AUC du modèle en aval.
+        Répond à la critique sur le manque de justification du choix de k.
+        """
+        from sklearn.ensemble import RandomForestClassifier
+        from sklearn.model_selection import cross_val_score
+        
+        if k_values is None:
+            k_values = getattr(self.config.data, 'knn_sensitivity_range', [3, 5, 7, 9, 15])
+        
+        logger.info(f"Démarrage de l'analyse de sensibilité k-NN pour k={k_values}...")
+        results = []
+        
+        for k in k_values:
+            # 1. Imputation avec k
+            imputer = KNNImputer(n_neighbors=k)
+            X_imp = pd.DataFrame(imputer.fit_transform(X), columns=X.columns)
+            
+            # 2. Entraînement et évaluation d'un modèle de base (RandomForest)
+            clf = RandomForestClassifier(n_estimators=50, random_state=42)
+            
+            # Gestion du cas où on a des classes trop petites pour cv=5
+            cv_folds = min(5, y.value_counts().min())
+            if cv_folds < 2:
+                # Si les classes sont extrêmement déséquilibrées (ex: 1 seul exemple)
+                logger.warning(f"Classes trop peu représentées pour CV (min {cv_folds}). On saute l'évaluation.")
+                auc_mean = np.nan
+            else:
+                try:
+                    scores = cross_val_score(clf, X_imp, y, cv=cv_folds, scoring='roc_auc')
+                    auc_mean = scores.mean()
+                except Exception as e:
+                    logger.warning(f"Erreur lors de l'évaluation CV pour k={k}: {e}")
+                    auc_mean = np.nan
+            
+            results.append({
+                'k': k,
+                'mean_auc': auc_mean
+            })
+            
+        sensitivity_df = pd.DataFrame(results)
+        logger.info(f"Analyse de sensibilité terminée:\n{sensitivity_df}")
+        return sensitivity_df
 
 
 class ClinicalPreprocessor:

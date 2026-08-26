@@ -1,0 +1,98 @@
+======================================================================
+MODÉLISATION ET EXPLAINABILITY
+======================================================================
+
+Train: (420, 150), Val: (105, 150), Test: (132, 150)
+
+
+🧠 Entraînement des modèles
+
+Poids de classe dynamique calculé : 7.40
+
+
+========================================
+Entraînement: logistic_regression
+Erreur d'évaluation pour logistic_regression: name 'precision_score' is not defined
+
+========================================
+Entraînement: random_forest
+
+Erreur d'évaluation pour random_forest: name 'precision_score' is not defined
+
+========================================
+Entraînement: xgboost
+
+Erreur d'évaluation pour xgboost: name 'precision_score' is not defined
+
+========================================
+Entraînement: lightgbm
+Erreur d'évaluation pour lightgbm: name 'precision_score' is not defined
+
+========================================
+Entraînement: svm
+
+Erreur d'évaluation pour svm: name 'precision_score' is not defined
+
+========================================
+Entraînement: extra_trees
+
+Erreur d'évaluation pour extra_trees: name 'precision_score' is not defined
+
+========================================
+Entraînement: catboost
+
+Erreur d'évaluation pour catboost: name 'precision_score' is not defined
+
+========================================
+Entraînement: ada_boost
+
+Erreur d'évaluation pour ada_boost: name 'precision_score' is not defined
+
+========================================
+Entraînement: knn
+
+Erreur d'évaluation pour knn: name 'precision_score' is not defined
+
+========================================
+Entraînement: gradient_boosting
+
+Erreur d'évaluation pour gradient_boosting: name 'precision_score' is not defined
+
+========================================
+Entraînement: mlp
+
+Erreur d'évaluation pour mlp: name 'precision_score' is not defined
+
+========================================
+Entraînement: naive_bayes
+Erreur d'évaluation pour naive_bayes: name 'precision_score' is not defined
+
+========================================
+Entraînement: decision_tree
+Erreur d'évaluation pour decision_tree: name 'precision_score' is not defined
+
+========================================
+Entraînement: sgd
+Erreur d'évaluation pour sgd: name 'precision_score' is not defined
+
+========================================
+Entraînement: ridge
+Erreur d'évaluation pour ridge: name 'precision_score' is not defined
+
+========================================
+Entraînement: qda
+Erreur d'entraînement pour qda: The covariance matrix of class 1 is not full rank. When using `solver='svd'` the number of samples in each class should be more than the number of features, but class 1 has 50 samples and 150 features. Try using `solver='eigen'` and setting the parameter `shrinkage` for regularization.
+
+========================================
+Entraînement: bagging
+
+Erreur d'évaluation pour bagging: name 'precision_score' is not defined
+
+========================================
+Entraînement: hist_gradient_boosting
+
+Erreur d'évaluation pour hist_gradient_boosting: name 'precision_score' is not defined
+
+
+📊 Comparaison:
+

@@ -6,28 +6,28 @@ EXPLANATION STABILITY REPORT
 ----------------------------------------
 
 noise_0.01:
-  Jaccard Index: 1.000 ± 0.000
-  Spearman Correlation: 0.994 ± 0.003
+  Jaccard Index: 0.336 ± 0.057
+  Spearman Correlation: 0.832 ± 0.113
 
 noise_0.05:
-  Jaccard Index: 1.000 ± 0.000
-  Spearman Correlation: 0.993 ± 0.003
+  Jaccard Index: 0.381 ± 0.048
+  Spearman Correlation: 0.878 ± 0.098
 
 noise_0.1:
-  Jaccard Index: 1.000 ± 0.000
-  Spearman Correlation: 0.992 ± 0.003
+  Jaccard Index: 0.384 ± 0.077
+  Spearman Correlation: 0.834 ± 0.108
 
 2. MISSING VALUES STABILITY
 ----------------------------------------
 
 missing_0.05:
-  Jaccard Index: 1.000 ± 0.000
+  Jaccard Index: 0.355 ± 0.068
 
 missing_0.1:
-  Jaccard Index: 0.982 ± 0.055
+  Jaccard Index: 0.363 ± 0.065
 
 missing_0.2:
-  Jaccard Index: 0.982 ± 0.055
+  Jaccard Index: 0.347 ± 0.081
 
 ============================================================
 INTERPRETATION:
