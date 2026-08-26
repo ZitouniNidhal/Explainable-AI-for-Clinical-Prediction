@@ -1,0 +1,14 @@
+2026-08-26 20:32:29,627 - __main__ - INFO - ============================================================
+2026-08-26 20:32:29,627 - __main__ - INFO - STARTING XAI CLINICAL PIPELINE
+2026-08-26 20:32:29,628 - __main__ - INFO - ============================================================
+2026-08-26 20:32:29,628 - __main__ - INFO - [DATA] Loading multi-omic data (Filter: None)...
+2026-08-26 20:32:29,628 - __main__ - INFO -   - Loading PANCAN gene expression (Top 5000)...
+2026-08-26 20:32:29,629 - __main__ - ERROR - CRITICAL ERROR during data loading: Aucun fichier d'expression PANCAN trouvé dans data\raw\pancan
+2026-08-26 20:32:29,630 - __main__ - ERROR - Traceback (most recent call last):
+  File "C:\Users\nidha\Desktop\xai_clinical_prediction\src\xai_clinical\pipeline.py", line 131, in _load_data
+    pancan_expr = self.pancan_loader.load_gene_expression(top_genes=self.config.data.n_genes)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\nidha\Desktop\xai_clinical_prediction\src\xai_clinical\data\pancan_loader.py", line 44, in load_gene_expression
+    raise FileNotFoundError(f"Aucun fichier d'expression PANCAN trouvé dans {self.data_dir}")
+FileNotFoundError: Aucun fichier d'expression PANCAN trouvé dans data\raw\pancan
+
